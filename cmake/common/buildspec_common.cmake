@@ -65,7 +65,12 @@ function(_setup_obs_studio)
     # already pins the target Windows version, so this is just letting the
     # installed SDK auto-resolve for this inner obs-studio sub-build.
     set(_cmake_arch "-A ${arch}")
-    set(_cmake_extra "-DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION} -DCMAKE_ENABLE_SCRIPTING=OFF")
+    # NOTE: must be a proper CMake list (separate quoted args), not one
+    # space-joined string — ${_cmake_extra} is expanded unquoted below, and
+    # an unquoted space-joined string becomes a SINGLE argv element with a
+    # literal space in it, which silently corrupts both -D values (see the
+    # macOS branch's comment below for how this manifested).
+    set(_cmake_extra "-DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}" "-DCMAKE_ENABLE_SCRIPTING=OFF")
   elseif(OS_MACOS)
     set(_cmake_generator "Xcode")
     set(_cmake_arch "-DCMAKE_OSX_ARCHITECTURES:STRING='arm64;x86_64'")
@@ -85,7 +90,17 @@ function(_setup_obs_studio)
         OUTPUT_STRIP_TRAILING_WHITESPACE
       )
     endif()
-    set(_cmake_extra "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET} -DCMAKE_OSX_SYSROOT=${_macos_sdk_path}")
+    # Same list-vs-space-joined-string pitfall as the Windows branch above:
+    # this used to be one space-joined string with a single -D flag in it
+    # (harmless while there was only one), but adding a second -D flag to
+    # the same joined string made the *whole* expanded value land in a
+    # single argv element (since ${_cmake_extra} is expanded unquoted at the
+    # call site). CMake's -D parser then read everything after the first
+    # "=" — including the literal space and the second "-DCMAKE_OSX_SYSROOT="
+    # — as ONE value for CMAKE_OSX_DEPLOYMENT_TARGET, which is exactly what
+    # showed up mangled into the linker's target triple ("... 12.0
+    # -DCMAKE_OSX_SYSROOT=/Applications/...-ld doesn't exist").
+    set(_cmake_extra "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}" "-DCMAKE_OSX_SYSROOT=${_macos_sdk_path}")
   endif()
 
   message(STATUS "Configure ${label} (${arch})")
@@ -251,12 +266,16 @@ function(_check_dependencies)
 
   _setup_obs_studio()
 
-  # TEMPORARY DIAGNOSTIC: find_package(libobs) fails on Windows CI right
-  # after this despite the nested obs-studio install reporting success.
-  # Dump what actually landed on disk so we can see why. Remove once fixed.
-  message(STATUS "DIAG: CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}")
-  file(GLOB_RECURSE _diag_configs "${dependencies_dir}/*Config.cmake" "${dependencies_dir}/*-config.cmake")
-  message(STATUS "DIAG: *Config.cmake files under ${dependencies_dir}: ${_diag_configs}")
-  file(GLOB _diag_deps_top LIST_DIRECTORIES true "${dependencies_dir}/*")
-  message(STATUS "DIAG: top-level entries under ${dependencies_dir}: ${_diag_deps_top}")
+  if(OS_WINDOWS)
+    # obs-studio's own Windows install(EXPORT ...) rules put package config
+    # files directly under "<prefix>/cmake/<component>/" (no "lib/" or
+    # "share/" in between) — unlike its macOS layout (a libobs.framework
+    # bundle) or the generic Unix "lib/cmake/<name>/" convention. That
+    # doesn't match any of CMake's standard find_package Config-mode search
+    # patterns, so find_package(libobs REQUIRED) / find_package(obs-frontend-api
+    # REQUIRED) can't locate it via CMAKE_PREFIX_PATH alone. Hint the exact
+    # locations directly (confirmed present via a one-off CI diagnostic dump).
+    set(libobs_DIR "${dependencies_dir}/cmake/libobs" CACHE PATH "libobs config dir" FORCE)
+    set(obs-frontend-api_DIR "${dependencies_dir}/cmake/obs-frontend-api" CACHE PATH "obs-frontend-api config dir" FORCE)
+  endif()
 endfunction()
