@@ -69,12 +69,23 @@ function(_setup_obs_studio)
   elseif(OS_MACOS)
     set(_cmake_generator "Xcode")
     set(_cmake_arch "-DCMAKE_OSX_ARCHITECTURES:STRING='arm64;x86_64'")
-    # CMAKE_OSX_SYSROOT must be forwarded explicitly: this nested obs-studio
-    # configure doesn't inherit it from our own top-level project scope, and
+    # CMAKE_OSX_SYSROOT isn't actually populated in our own top-level scope
+    # either at this point (the Xcode generator resolves it lazily, later
+    # than this), so forwarding "${CMAKE_OSX_SYSROOT}" just forwards empty.
     # obs-studio 30.2.3's own cmake/macos/compilerconfig.cmake assumes it's
-    # already set, otherwise it fails with "Your macOS SDK version () is too
-    # low" (the version string reads as empty rather than actually low).
-    set(_cmake_extra "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET} -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}")
+    # already set and fails with "Your macOS SDK version () is too low"
+    # otherwise. Resolve it explicitly via xcrun instead of relying on the
+    # variable.
+    if(CMAKE_OSX_SYSROOT)
+      set(_macos_sdk_path "${CMAKE_OSX_SYSROOT}")
+    else()
+      execute_process(
+        COMMAND xcrun --sdk macosx --show-sdk-path
+        OUTPUT_VARIABLE _macos_sdk_path
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+    endif()
+    set(_cmake_extra "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET} -DCMAKE_OSX_SYSROOT=${_macos_sdk_path}")
   endif()
 
   message(STATUS "Configure ${label} (${arch})")
@@ -239,4 +250,13 @@ function(_check_dependencies)
   set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} CACHE PATH "CMake prefix search path" FORCE)
 
   _setup_obs_studio()
+
+  # TEMPORARY DIAGNOSTIC: find_package(libobs) fails on Windows CI right
+  # after this despite the nested obs-studio install reporting success.
+  # Dump what actually landed on disk so we can see why. Remove once fixed.
+  message(STATUS "DIAG: CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}")
+  file(GLOB_RECURSE _diag_configs "${dependencies_dir}/*Config.cmake" "${dependencies_dir}/*-config.cmake")
+  message(STATUS "DIAG: *Config.cmake files under ${dependencies_dir}: ${_diag_configs}")
+  file(GLOB _diag_deps_top LIST_DIRECTORIES true "${dependencies_dir}/*")
+  message(STATUS "DIAG: top-level entries under ${dependencies_dir}: ${_diag_deps_top}")
 endfunction()
