@@ -54,12 +54,27 @@ function(_setup_obs_studio)
 
   if(OS_WINDOWS)
     set(_cmake_generator "${CMAKE_GENERATOR}")
-    set(_cmake_arch "-A ${arch},version=${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+    # Deliberately NOT passing ",version=${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}"
+    # here: when reconstructed into a raw `-A` command-line argument for this
+    # nested execute_process (as opposed to a CMakePresets.json "architecture"
+    # field, which CMake parses differently), CMAKE_VS_PLATFORM_NAME ends up
+    # equal to the whole "x64,version=X" string instead of just "x64". That
+    # broke the hashes lookup in obs-studio's own vendored buildspec.json
+    # (which only has a plain "windows-x64" key) with "JSON member 'hashes
+    # windows-x64,version=10.0.22621.0' not found". CMAKE_SYSTEM_VERSION below
+    # already pins the target Windows version, so this is just letting the
+    # installed SDK auto-resolve for this inner obs-studio sub-build.
+    set(_cmake_arch "-A ${arch}")
     set(_cmake_extra "-DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION} -DCMAKE_ENABLE_SCRIPTING=OFF")
   elseif(OS_MACOS)
     set(_cmake_generator "Xcode")
     set(_cmake_arch "-DCMAKE_OSX_ARCHITECTURES:STRING='arm64;x86_64'")
-    set(_cmake_extra "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    # CMAKE_OSX_SYSROOT must be forwarded explicitly: this nested obs-studio
+    # configure doesn't inherit it from our own top-level project scope, and
+    # obs-studio 30.2.3's own cmake/macos/compilerconfig.cmake assumes it's
+    # already set, otherwise it fails with "Your macOS SDK version () is too
+    # low" (the version string reads as empty rather than actually low).
+    set(_cmake_extra "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET} -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}")
   endif()
 
   message(STATUS "Configure ${label} (${arch})")
