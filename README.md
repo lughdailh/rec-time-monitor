@@ -119,8 +119,10 @@ corresponent a <https://github.com/obsproject/obs-studio>) i torna a compilar.
   d'avís com a textures GPU. Multiplataforma excepte `CreateDisplay()` (el
   tros que dona a OBS el handle de finestra nativa), que viu a part:
   - `src/program-display-mac.mm` — versió macOS (`NSView`).
-  - `src/program-display-win.cpp` — versió Windows (`HWND`); **sense provar
-    en una màquina Windows real** (vegeu més avall).
+  - `src/program-display-win.cpp` — versió Windows (`HWND`); compila
+    correctament a la CI de GitHub Actions (vegeu més avall), però mai s'ha
+    provat *en execució* dins d'un OBS real a Windows, perquè no tenim cap
+    màquina Windows a mà.
 - `src/program-monitor-dialog.{hpp,cpp}` — la finestra: cada 200 ms calcula
   l'estat (color/text/temps del badge, quin avís toca activar i de quin
   color) i ho envia a `OBSProgramDisplay`. També el menú contextual (clic
@@ -147,43 +149,60 @@ dibuixar-ho tot al mateix fotograma GPU els evita per complet.
 
 ## Windows
 
-El codi hauria de compilar a Windows (el `CMakePresets.json` ja porta un
-preset `windows-x64`, i `buildspec.json` apunta a les mateixes versions
-d'OBS/Qt6 que macOS, 30.2.3 / 2024-05-08), però **no s'ha compilat ni provat
-mai en una màquina Windows real** — tot el desenvolupament d'aquest plugin
-s'ha fet en un Mac, iterant contra errors que només apareixen en compilar i
-executar de veritat (problemes de linkatge, de composició de finestres, un
-crash en tancar...). És molt probable que `program-display-win.cpp` necessiti
-ajustos similars la primera vegada que es compili i es provi a Windows. Quan
-hi hagi una màquina Windows disponible, cal:
+El projecte es compila i s'empaqueta **automàticament a cada push** via
+GitHub Actions (`.github/workflows/build-project.yaml`, job "Build for
+Windows 🪟" en un runner `windows-2022`) — verificat que compila net i genera
+l'instal·lador. Com que no tenim cap màquina Windows pròpia, això és la
+manera real de compilar i obtenir el `.exe`: el runner de GitHub fa de
+"màquina Windows a la carpeta del núvol".
 
-1. `cmake --preset windows-x64` (Visual Studio 17 2022) i
-   `cmake --build --preset windows-x64`.
-2. Copiar el `.dll` resultant a
-   `%APPDATA%\obs-studio\plugins\rec-time-monitor\bin\64bit\`.
-3. Depurar el que calgui — probablement el primer intent no carregarà a la
-   primera.
+### Obtenir l'instal·lador ja compilat
 
-### Instal·lador `.exe` (Windows) — script preparat, sense provar
+1. Vés a la pestanya **Actions** del repositori a GitHub
+   (`lughdailh/rec-time-monitor`) i obre l'últim run verd de "Push".
+2. A "Artifacts", descarrega `rec-time-monitor-<versió>-windows-x64-installer-<hash>`
+   (un `.zip` que conté `REC-Time-Monitor-Windows-Setup.exe`).
+3. Executa'l al PC amb OBS instal·lat. Com que no està signat amb cap
+   certificat, Windows Defender/SmartScreen probablement avisarà d'"editor
+   desconegut" — cal fer "Més informació" → "Executa de totes maneres".
 
-`installer/windows/rec-time-monitor.iss` és un script d'[Inno
-Setup](https://jrsoftware.org/isinfo.php) que empaqueta el resultat de
-`cmake --build --preset windows-x64` (la carpeta
-`build_x64\rundir\RelWithDebInfo\rec-time-monitor\`, que ja té l'estructura
-`bin\64bit\` + `data\` correcta) en un instal·lador que el copia a
-`%APPDATA%\obs-studio\plugins\rec-time-monitor\`.
+Nota important: la compilació (`cmake`/MSVC) està verificada — **el plugin
+compila net i sense errors a Windows**. El que encara ningú ha comprovat és
+que *funcioni* dins d'un OBS real un cop instal·lat (obrir la finestra,
+veure el Programa, el cronòmetre, etc.), perquè no tenim manera d'executar
+OBS en un runner de CI. Si el proves i alguna cosa no va, avisa i ho
+depurem.
 
-Com que Inno Setup és una eina de Windows, aquest `.iss` **no s'ha compilat
-mai** (només se n'ha revisat la sintaxi a mà) — no hi ha manera de generar ni
-provar l'`.exe` sense una màquina Windows. Un cop hi hagi el `.dll` compilat:
+### Compilar-ho manualment (si algun dia hi ha una màquina Windows a mà)
 
 ```sh
 cmake --preset windows-x64
 cmake --build --preset windows-x64
+cmake --install build_x64 --prefix release\RelWithDebInfo --config RelWithDebInfo
 cd installer\windows
 iscc rec-time-monitor.iss
 ```
 
-L'instal·lador (`installer\windows\Output\REC-Time-Monitor-Windows-Setup.exe`)
-tampoc estarà signat, així que Windows Defender/SmartScreen probablement
-avisarà de "editor desconegut" la primera vegada.
+L'instal·lador acaba a `installer\windows\Output\REC-Time-Monitor-Windows-Setup.exe`.
+Nota: cal el pas `cmake --install` (no n'hi ha prou amb `cmake --build`) —
+és el que deixa el `.dll` i les dades a `release\RelWithDebInfo\rec-time-monitor\`
+amb l'estructura `bin\64bit\` + `data\` que espera l'`.iss`.
+
+### Bugs reals que vam trobar i arreglar només veient els logs de CI
+
+Cap d'aquests es podia detectar sense compilar de veritat a Windows — són la
+prova de per què calia aquesta infraestructura de CI:
+
+- El mecanisme intern del plugin-template que compila `libobs` des del codi
+  font d'OBS (una compilació niada, separada de la nostra) reconstruïa el
+  seu propi argument `-A x64,version=X` per a `cmake`, cosa que feia que
+  `CMAKE_VS_PLATFORM_NAME` resolgués a la cadena sencera en comptes de només
+  `"x64"`, trencant la cerca del hash al `buildspec.json` propi d'OBS.
+- Un bug de quoting a CMake: dues flags `-D` juntes en una sola variable de
+  text separada per espais (en lloc d'una llista CMake amb `;`) es passaven
+  com un sol argument amb un espai literal dins, corrompent els dos valors
+  quan s'expandien sense cometes.
+- OBS Studio instal·la els fitxers `Config.cmake` de `libobs`,
+  `obs-frontend-api` i `w32-pthreads` a Windows a `<prefix>/cmake/<nom>/`
+  (sense `lib/` ni `share/` pel mig) — una ubicació que `find_package` no
+  cerca per defecte. Calia apuntar `libobs_DIR` etc. directament.
