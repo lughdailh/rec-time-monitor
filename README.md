@@ -162,9 +162,34 @@ manera real de compilar i obtenir el `.exe`: el runner de GitHub fa de
    (`lughdailh/rec-time-monitor`) i obre l'últim run verd de "Push".
 2. A "Artifacts", descarrega `rec-time-monitor-<versió>-windows-x64-installer-<hash>`
    (un `.zip` que conté `REC-Time-Monitor-Windows-Setup.exe`).
-3. Executa'l al PC amb OBS instal·lat. Com que no està signat amb cap
-   certificat, Windows Defender/SmartScreen probablement avisarà d'"editor
-   desconegut" — cal fer "Més informació" → "Executa de totes maneres".
+3. Executa'l com a **administrador** al PC amb OBS instal·lat (instal·la a
+   `%ProgramData%\obs-studio\plugins\`, una carpeta de sistema). Com que no
+   està signat amb cap certificat, Windows Defender/SmartScreen probablement
+   avisarà d'"editor desconegut" — cal fer "Més informació" → "Executa de
+   totes maneres".
+
+> **Bug detectat i corregit (2026-07-13):** la primera versió de
+> l'instal·lador posava el plugin a `%APPDATA%\obs-studio\plugins\` (carpeta
+> per usuari), però OBS a Windows només escaneja plugins de tercers a
+> `%ProgramData%\obs-studio\plugins\` (carpeta de màquina) — per això no
+> apareixia al menú Eines. Si vas instal·lar una versió anterior a aquest
+> commit, desinstal·la-la i torna a baixar l'últim `.exe`, o mira
+> l'"Alternativa: copiar els fitxers a mà" més avall.
+
+### Alternativa: copiar els fitxers a mà (sense instal·lador)
+
+Si prefereixes no executar cap instal·lador, descarrega l'artefacte
+`rec-time-monitor-<versió>-windows-x64-<hash>` (el `.zip` "pla", no el
+"-installer") des de la mateixa pestanya Actions. Conté una carpeta
+`rec-time-monitor\` amb `bin\64bit\rec-time-monitor.dll` i `data\`. Copia
+aquesta carpeta sencera dins de:
+
+```text
+%ProgramData%\obs-studio\plugins\
+```
+
+de manera que quedi `%ProgramData%\obs-studio\plugins\rec-time-monitor\bin\64bit\rec-time-monitor.dll`.
+Cal ser administrador per escriure a `%ProgramData%`.
 
 Nota important: la compilació (`cmake`/MSVC) està verificada — **el plugin
 compila net i sense errors a Windows**. El que encara ningú ha comprovat és
