@@ -275,7 +275,11 @@ function(_check_dependencies)
     # patterns, so find_package(libobs REQUIRED) / find_package(obs-frontend-api
     # REQUIRED) can't locate it via CMAKE_PREFIX_PATH alone. Hint the exact
     # locations directly (confirmed present via a one-off CI diagnostic dump).
+    # libobsConfig.cmake itself internally calls find_dependency(w32-pthreads),
+    # so that one needs hinting too, not just our own two direct find_package()
+    # calls.
     set(libobs_DIR "${dependencies_dir}/cmake/libobs" CACHE PATH "libobs config dir" FORCE)
     set(obs-frontend-api_DIR "${dependencies_dir}/cmake/obs-frontend-api" CACHE PATH "obs-frontend-api config dir" FORCE)
+    set(w32-pthreads_DIR "${dependencies_dir}/cmake/w32-pthreads" CACHE PATH "w32-pthreads config dir" FORCE)
   endif()
 endfunction()
