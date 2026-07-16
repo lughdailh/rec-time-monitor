@@ -16,5 +16,5 @@
     <choice id="cat.ccs.rec-time-monitor" visible="false">
         <pkg-ref id="cat.ccs.rec-time-monitor"/>
     </choice>
-    <pkg-ref id="cat.ccs.rec-time-monitor" version="1.0.0" onConclusion="none">component.pkg</pkg-ref>
+    <pkg-ref id="cat.ccs.rec-time-monitor" version="2.0.0" onConclusion="none">component.pkg</pkg-ref>
 </installer-gui-script>

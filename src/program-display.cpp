@@ -36,6 +36,12 @@ OBSProgramDisplay::~OBSProgramDisplay()
 		obs_leave_graphics();
 		badgeTexture_ = nullptr;
 	}
+	if (messageTexture_) {
+		obs_enter_graphics();
+		gs_texture_destroy(messageTexture_);
+		obs_leave_graphics();
+		messageTexture_ = nullptr;
+	}
 }
 
 void OBSProgramDisplay::showEvent(QShowEvent *event)
@@ -77,24 +83,38 @@ void OBSProgramDisplay::SetOverlayState(const QImage &badgeImage, bool alarmActi
 	overlayStateDirty_ = true;
 }
 
+void OBSProgramDisplay::SetMessageOverlay(const QImage &messageImage, bool visible)
+{
+	QMutexLocker locker(&overlayMutex_);
+	pendingMessageImage_ = messageImage;
+	pendingMessageVisible_ = visible;
+	overlayStateDirty_ = true;
+}
+
 void OBSProgramDisplay::UpdateOverlayStateIfNeeded()
 {
 	// Runs on the OBS video thread (called from Draw(), itself called from
 	// the draw callback), where issuing gs_ calls directly is safe.
 	QImage image;
+	QImage messageImage;
 	bool haveNewImage;
+	bool haveNewMessageImage;
 	{
 		QMutexLocker locker(&overlayMutex_);
 		alarmActive_ = pendingAlarmActive_;
+		messageVisible_ = pendingMessageVisible_;
 		if (!pendingAlertColorHex_.isEmpty())
 			alertColorHex_ = pendingAlertColorHex_;
 		haveNewImage = overlayStateDirty_;
 		if (haveNewImage)
 			image = pendingBadgeImage_;
+		haveNewMessageImage = overlayStateDirty_;
+		if (haveNewMessageImage)
+			messageImage = pendingMessageImage_;
 		overlayStateDirty_ = false;
 	}
 
-	if (!haveNewImage)
+	if (!haveNewImage && !haveNewMessageImage)
 		return;
 
 	if (badgeTexture_) {
@@ -103,16 +123,33 @@ void OBSProgramDisplay::UpdateOverlayStateIfNeeded()
 	}
 
 	if (image.isNull())
-		return;
-
-	// QImage::Format_ARGB32's in-memory byte order (B, G, R, A on
-	// little-endian) matches GS_BGRA directly, no conversion needed.
-	image = image.convertToFormat(QImage::Format_ARGB32);
-	const uint8_t *data = image.constBits();
-	badgeTexture_ = gs_texture_create(static_cast<uint32_t>(image.width()), static_cast<uint32_t>(image.height()),
+		badgeTextureWidth_ = badgeTextureHeight_ = 0;
+	else {
+		// QImage::Format_ARGB32's in-memory byte order (B, G, R, A on
+		// little-endian) matches GS_BGRA directly, no conversion needed.
+		image = image.convertToFormat(QImage::Format_ARGB32);
+		const uint8_t *data = image.constBits();
+		badgeTexture_ = gs_texture_create(static_cast<uint32_t>(image.width()), static_cast<uint32_t>(image.height()),
 					   GS_BGRA, 1, &data, 0);
-	badgeTextureWidth_ = image.width();
-	badgeTextureHeight_ = image.height();
+		badgeTextureWidth_ = image.width();
+		badgeTextureHeight_ = image.height();
+	}
+
+	if (messageTexture_) {
+		gs_texture_destroy(messageTexture_);
+		messageTexture_ = nullptr;
+	}
+
+	if (messageImage.isNull())
+		messageTextureWidth_ = messageTextureHeight_ = 0;
+	else {
+		messageImage = messageImage.convertToFormat(QImage::Format_ARGB32);
+		const uint8_t *messageData = messageImage.constBits();
+		messageTexture_ = gs_texture_create(static_cast<uint32_t>(messageImage.width()),
+						 static_cast<uint32_t>(messageImage.height()), GS_BGRA, 1, &messageData, 0);
+		messageTextureWidth_ = messageImage.width();
+		messageTextureHeight_ = messageImage.height();
+	}
 }
 
 void OBSProgramDisplay::DrawCallback(void *data, uint32_t cx, uint32_t cy)
@@ -245,6 +282,28 @@ void OBSProgramDisplay::Draw(uint32_t cx, uint32_t cy)
 			gs_matrix_translate3f(badgeX, badgeY, 0.0f);
 			gs_draw_sprite(badgeTexture_, 0, static_cast<uint32_t>(badgeTextureWidth_),
 					static_cast<uint32_t>(badgeTextureHeight_));
+			gs_matrix_pop();
+		}
+
+		gs_blend_state_pop();
+	}
+
+	if (messageVisible_ && messageTexture_) {
+		const float messageX = (static_cast<float>(targetW) - static_cast<float>(messageTextureWidth_)) / 2.0f;
+		const float messageY = (static_cast<float>(targetH) - static_cast<float>(messageTextureHeight_)) / 2.0f;
+
+		gs_effect_t *effect = obs_get_base_effect(OBS_EFFECT_DEFAULT);
+		gs_eparam_t *imageParam = gs_effect_get_param_by_name(effect, "image");
+		gs_effect_set_texture(imageParam, messageTexture_);
+
+		gs_blend_state_push();
+		gs_blend_function(GS_BLEND_SRCALPHA, GS_BLEND_INVSRCALPHA);
+
+		while (gs_effect_loop(effect, "Draw")) {
+			gs_matrix_push();
+			gs_matrix_translate3f(messageX, messageY, 0.0f);
+			gs_draw_sprite(messageTexture_, 0, static_cast<uint32_t>(messageTextureWidth_),
+					static_cast<uint32_t>(messageTextureHeight_));
 			gs_matrix_pop();
 		}
 

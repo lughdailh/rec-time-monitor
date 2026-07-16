@@ -17,7 +17,7 @@ BUILD_DIR="/tmp/rec-time-monitor-build-macos"
 PKG_STAGE="/tmp/rec-time-monitor-pkg-stage"
 PLUGIN_BUNDLE="$BUILD_DIR/RelWithDebInfo/rec-time-monitor.plugin"
 OUT_DIR="$SRC_DIR/dist"
-VERSION="1.0.0"
+VERSION="2.0.0"
 DEVELOPER_ID_INSTALLER="Developer ID Installer: MOIZ I BARTRA PRODUCCIONS SL (B5DRNCGUYN)"
 
 # Make sure we have a fresh, working plugin build first.

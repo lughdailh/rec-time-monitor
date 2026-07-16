@@ -58,6 +58,10 @@ target_sources(
           src/program-monitor-dialog.hpp
           src/badge-image.cpp
           src/badge-image.hpp
+          src/message-image.cpp
+          src/message-image.hpp
+          src/quick-message-dialog.cpp
+          src/quick-message-dialog.hpp
           src/settings.cpp
           src/settings.hpp
           src/settings-dialog.cpp

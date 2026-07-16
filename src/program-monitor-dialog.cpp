@@ -1,15 +1,16 @@
 #include "program-monitor-dialog.hpp"
 #include "badge-image.hpp"
 #include "program-display.hpp"
-#include "settings-dialog.hpp"
+#include "message-image.hpp"
 #include "settings.hpp"
 #include "time-tracker.hpp"
 
 #include <QAction>
-#include <QContextMenuEvent>
-#include <QMenu>
+#include <QGuiApplication>
 #include <QResizeEvent>
+#include <QWindow>
 #include <QTimer>
+#include <QScreen>
 
 namespace {
 
@@ -53,29 +54,52 @@ ProgramMonitorDialog::ProgramMonitorDialog(QWidget *parent) : QWidget(parent, Qt
 	UpdateOverlay();
 }
 
+void ProgramMonitorDialog::ShowQuickMessage(const QString &message, int durationMs)
+{
+	quickMessage_ = message.trimmed();
+	quickMessageUntil_ = std::chrono::steady_clock::now() + std::chrono::milliseconds(durationMs);
+	UpdateOverlay();
+}
+
+void ProgramMonitorDialog::ShowOnScreen(int screenIndex, bool fullscreen)
+{
+	const auto screens = QGuiApplication::screens();
+	QScreen *screen = nullptr;
+	if (screenIndex >= 0 && screenIndex < screens.size())
+		screen = screens.at(screenIndex);
+	if (!screen)
+		screen = QGuiApplication::primaryScreen();
+
+	if (!screen)
+		return;
+
+	if (!isVisible())
+		show();
+
+	move(screen->geometry().topLeft());
+	resize(screen->geometry().size());
+	if (windowHandle())
+		windowHandle()->setScreen(screen);
+
+	if (fullscreen)
+		showFullScreen();
+	else
+		showNormal();
+
+	raise();
+	activateWindow();
+}
+
 void ProgramMonitorDialog::resizeEvent(QResizeEvent *event)
 {
 	QWidget::resizeEvent(event);
 	display_->setGeometry(rect());
 }
 
-void ProgramMonitorDialog::contextMenuEvent(QContextMenuEvent *event)
-{
-	QMenu menu(this);
-	QAction *settingsAction = menu.addAction("Configuració del Monitor de Programa...");
-	menu.addSeparator();
-	QAction *closeAction = menu.addAction("Tanca aquesta finestra");
-
-	QAction *chosen = menu.exec(event->globalPos());
-	if (chosen == settingsAction)
-		ShowSettingsDialog(this);
-	else if (chosen == closeAction)
-		close();
-}
-
 void ProgramMonitorDialog::UpdateOverlay()
 {
 	const TimeTracker::State state = TimeTracker::Instance().GetState();
+	const auto now = std::chrono::steady_clock::now();
 
 	QString colorHex = "#8e8e93";
 	QString badgeText = "STANDBY";
@@ -113,4 +137,6 @@ void ProgramMonitorDialog::UpdateOverlay()
 
 	const double scale = Settings::Instance().ScalePercent() / 100.0;
 	display_->SetOverlayState(RenderBadgeImage(colorHex, badgeText, FormatHMS(ms), scale), alarmActive, alertColorHex);
+	const bool quickMessageActive = !quickMessage_.isEmpty() && now < quickMessageUntil_;
+	display_->SetMessageOverlay(quickMessageActive ? RenderMessageImage(quickMessage_, scale) : QImage(), quickMessageActive);
 }

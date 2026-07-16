@@ -37,6 +37,8 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QWidget(parent, Qt::Window)
 
 	auto *alertsGroup = new QGroupBox("Avisos de temps", this);
 	auto *alertsGroupLayout = new QVBoxLayout(alertsGroup);
+	alertsGroupLayout->setSpacing(12);
+	alertsGroupLayout->setContentsMargins(18, 18, 18, 18);
 	alertsGroupLayout->addWidget(
 		new QLabel("En arribar a cada temps, el marc de la imatge es posa del color indicat.", alertsGroup));
 
@@ -44,6 +46,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QWidget(parent, Qt::Window)
 	alertsGroupLayout->addLayout(alertsLayout_);
 
 	auto *addButton = new QPushButton("+ Afegeix un avís", alertsGroup);
+	addButton->setMinimumHeight(44);
 	connect(addButton, &QPushButton::clicked, this, [this]() {
 		Settings::Instance().AddAlert(60, "#ff3b30");
 		RebuildAlertRows();
@@ -54,6 +57,9 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QWidget(parent, Qt::Window)
 
 	auto *badgeGroup = new QGroupBox("Cronòmetre", this);
 	auto *badgeLayout = new QFormLayout(badgeGroup);
+	badgeLayout->setVerticalSpacing(16);
+	badgeLayout->setHorizontalSpacing(16);
+	badgeLayout->setContentsMargins(18, 18, 18, 18);
 
 	cornerCombo_ = new QComboBox(badgeGroup);
 	cornerCombo_->addItem("Superior dreta", static_cast<int>(Settings::BadgeCorner::TopRight));
@@ -105,6 +111,7 @@ void SettingsDialog::RebuildAlertRows()
 		auto *row = new QWidget(this);
 		auto *rowLayout = new QHBoxLayout(row);
 		rowLayout->setContentsMargins(0, 4, 0, 4);
+		rowLayout->setSpacing(12);
 
 		QPushButton *colorButton = ColorSwatchButton(entry.colorHex, row);
 		connect(colorButton, &QPushButton::clicked, this,
@@ -122,13 +129,15 @@ void SettingsDialog::RebuildAlertRows()
 
 		auto *timeEditor = new BigTimeEditor(row);
 		timeEditor->setTotalSeconds(entry.seconds);
+		timeEditor->setMinimumWidth(420);
 		connect(timeEditor, &BigTimeEditor::secondsChanged, this,
 			[index](int seconds) { Settings::Instance().SetAlertSeconds(index, seconds); });
 		rowLayout->addWidget(timeEditor, 1);
 
 		auto *removeButton = new QPushButton("✕", row);
-		removeButton->setFixedSize(28, 28);
+		removeButton->setFixedSize(32, 32);
 		removeButton->setCursor(Qt::PointingHandCursor);
+		removeButton->setStyleSheet("font-size: 18px; font-weight: 700;");
 		connect(removeButton, &QPushButton::clicked, this, [this, index]() {
 			Settings::Instance().RemoveAlert(index);
 			RebuildAlertRows();

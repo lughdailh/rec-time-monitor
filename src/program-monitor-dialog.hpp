@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <QWidget>
 
 class QTimer;
@@ -13,10 +14,11 @@ class ProgramMonitorDialog : public QWidget {
 
 public:
 	explicit ProgramMonitorDialog(QWidget *parent = nullptr);
+	void ShowQuickMessage(const QString &message, int durationMs = 5000);
+	void ShowOnScreen(int screenIndex, bool fullscreen = true);
 
 protected:
 	void resizeEvent(QResizeEvent *event) override;
-	void contextMenuEvent(QContextMenuEvent *event) override;
 
 private slots:
 	void UpdateOverlay();
@@ -24,4 +26,6 @@ private slots:
 private:
 	OBSProgramDisplay *display_ = nullptr;
 	QTimer *timer_ = nullptr;
+	QString quickMessage_;
+	std::chrono::steady_clock::time_point quickMessageUntil_;
 };

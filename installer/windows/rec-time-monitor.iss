@@ -21,7 +21,7 @@
 ; The resulting installer appears in installer\windows\Output\.
 
 #define MyAppName "REC Time Monitor"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "CCS"
 #define PluginDirName "rec-time-monitor"
 #define BuiltPluginDir "..\..\release\RelWithDebInfo\" + PluginDirName

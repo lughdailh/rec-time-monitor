@@ -33,6 +33,7 @@ public:
 	// configured alert currently applies are both resolved by the caller,
 	// which already tracks TimeTracker state and Settings on the UI thread).
 	void SetOverlayState(const QImage &badgeImage, bool alarmActive, const QString &alertColorHex);
+	void SetMessageOverlay(const QImage &messageImage, bool visible);
 
 protected:
 	void showEvent(QShowEvent *event) override;
@@ -50,7 +51,9 @@ private:
 
 	QMutex overlayMutex_;
 	QImage pendingBadgeImage_;
+	QImage pendingMessageImage_;
 	bool pendingAlarmActive_ = false;
+	bool pendingMessageVisible_ = false;
 	QString pendingAlertColorHex_;
 	bool overlayStateDirty_ = false;
 
@@ -58,6 +61,10 @@ private:
 	gs_texture_t *badgeTexture_ = nullptr;
 	int badgeTextureWidth_ = 0;
 	int badgeTextureHeight_ = 0;
+	gs_texture_t *messageTexture_ = nullptr;
+	int messageTextureWidth_ = 0;
+	int messageTextureHeight_ = 0;
 	bool alarmActive_ = false;
 	QString alertColorHex_ = "#ff3b30";
+	bool messageVisible_ = false;
 };

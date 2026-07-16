@@ -62,38 +62,12 @@ aquí/a OBS. Els fitxers dins d'iCloud Drive porten metadades que fan fallar
 ./build-macos-installer.sh
 ```
 
-Compila el plugin i genera `dist/REC-Time-Monitor-macOS.pkg`: un instal·lador
-de doble clic que copia el plugin a
-`~/Library/Application Support/obs-studio/plugins/` sense demanar contrasenya
-d'administrador (instal·la només a la carpeta de l'usuari actual, domini
-"Current User Home"). Verificat funcionant (`installer -pkg ... -target
-CurrentUserHomeDirectory`).
+Compila el plugin i genera `dist/REC-Time-Monitor-macOS.zip`: un arxiu ZIP
+que conté la bundle `rec-time-monitor.plugin` preparada per copiar a
+`~/Library/Application Support/obs-studio/plugins/`.
 
-El plugin i el `.pkg` es signen automàticament si al clauer hi ha els
-certificats "Developer ID Application" i "Developer ID Installer" (equip
-MOIZ I BARTRA PRODUCCIONS SL, B5DRNCGUYN) — si no hi són, cauen a un build
-sense signar (aleshores cal clic dret → Obrir en comptes de doble clic).
-
-Signar no n'hi ha prou: per evitar del tot l'avís de Gatekeeper cal també
-**notaritzar-ho**:
-
-```sh
-./notarize-macos.sh
-```
-
-Necessita una configuració d'un sol cop (a fer directament al Terminal, mai
-enganxant la contrasenya en un xat/IA):
-
-```sh
-xcrun notarytool store-credentials "rec-time-monitor-notary" \
-  --apple-id "el-teu-apple-id@exemple.com" \
-  --team-id "B5DRNCGUYN"
-```
-
-Demanarà una contrasenya específica d'app (es genera a
-appleid.apple.com → "Inici de sessió i seguretat" → "Contrasenyes específiques
-d'app") i la desa xifrada al clauer sota el nom de perfil
-`rec-time-monitor-notary`; `notarize-macos.sh` ja el fa servir automàticament.
+Per distribuir-lo a la web, només has de descomprimir-lo i copiar la carpeta
+`rec-time-monitor.plugin` sencera al directori de plugins d'OBS de l'usuari.
 
 ### Per què les versions de `buildspec.json` estan fixades a 30.2.3 / 2024-05-08
 
@@ -151,38 +125,34 @@ dibuixar-ho tot al mateix fotograma GPU els evita per complet.
 
 El projecte es compila i s'empaqueta **automàticament a cada push** via
 GitHub Actions (`.github/workflows/build-project.yaml`, job "Build for
-Windows 🪟" en un runner `windows-2022`) — verificat que compila net i genera
-l'instal·lador. Com que no tenim cap màquina Windows pròpia, això és la
-manera real de compilar i obtenir el `.exe`: el runner de GitHub fa de
+Windows 🪟" en un runner `windows-2022`) — verificat que compila net i
+genera un ZIP. Com que no tenim cap màquina Windows pròpia, això és la
+manera real de compilar i obtenir el paquet: el runner de GitHub fa de
 "màquina Windows a la carpeta del núvol".
 
 ### Obtenir l'instal·lador ja compilat
 
 1. Vés a la pestanya **Actions** del repositori a GitHub
    (`lughdailh/rec-time-monitor`) i obre l'últim run verd de "Push".
-2. A "Artifacts", descarrega `rec-time-monitor-<versió>-windows-x64-installer-<hash>`
-   (un `.zip` que conté `REC-Time-Monitor-Windows-Setup.exe`).
-3. Executa'l com a **administrador** al PC amb OBS instal·lat (instal·la a
-   `%ProgramData%\obs-studio\plugins\`, una carpeta de sistema). Com que no
-   està signat amb cap certificat, Windows Defender/SmartScreen probablement
-   avisarà d'"editor desconegut" — cal fer "Més informació" → "Executa de
-   totes maneres".
+2. A "Artifacts", descarrega `rec-time-monitor-<versió>-windows-x64-<hash>`
+  (un `.zip` que conté la carpeta `rec-time-monitor\`).
+3. Descomprimeix-lo i copia la carpeta sencera `rec-time-monitor\` a
+  `%ProgramData%\obs-studio\plugins\`.
 
-> **Bug detectat i corregit (2026-07-13):** la primera versió de
-> l'instal·lador posava el plugin a `%APPDATA%\obs-studio\plugins\` (carpeta
-> per usuari), però OBS a Windows només escaneja plugins de tercers a
-> `%ProgramData%\obs-studio\plugins\` (carpeta de màquina) — per això no
-> apareixia al menú Eines. Si vas instal·lar una versió anterior a aquest
-> commit, desinstal·la-la i torna a baixar l'últim `.exe`, o mira
-> l'"Alternativa: copiar els fitxers a mà" més avall.
+> **Bug detectat i corregit (2026-07-13):** la primera versió col·locava el
+> plugin a `%APPDATA%\obs-studio\plugins\` (carpeta per usuari), però OBS a
+> Windows només escaneja plugins de tercers a
+> `%ProgramData%\obs-studio\plugins\` (carpeta de màquina). Si vas
+> instal·lar una versió anterior a aquest commit, torna a descarregar el ZIP
+> i copia'l a la carpeta correcta.
 
 ### Alternativa: copiar els fitxers a mà (sense instal·lador)
 
-Si prefereixes no executar cap instal·lador, descarrega l'artefacte
-`rec-time-monitor-<versió>-windows-x64-<hash>` (el `.zip` "pla", no el
-"-installer") des de la mateixa pestanya Actions. Conté una carpeta
-`rec-time-monitor\` amb `bin\64bit\rec-time-monitor.dll` i `data\`. Copia
-aquesta carpeta sencera dins de:
+Si prefereixes no instal·lar res, descarrega l'artefacte
+`rec-time-monitor-<versió>-windows-x64-<hash>` (el `.zip`) des de la mateixa
+pestanya Actions. Conté una carpeta `rec-time-monitor\` amb
+`bin\64bit\rec-time-monitor.dll` i `data\`. Copia aquesta carpeta sencera
+dins de:
 
 ```text
 %ProgramData%\obs-studio\plugins\
@@ -208,10 +178,10 @@ cd installer\windows
 iscc rec-time-monitor.iss
 ```
 
-L'instal·lador acaba a `installer\windows\Output\REC-Time-Monitor-Windows-Setup.exe`.
+El ZIP acaba a `release\rec-time-monitor-<versió>-windows-x64-<hash>.zip`.
 Nota: cal el pas `cmake --install` (no n'hi ha prou amb `cmake --build`) —
 és el que deixa el `.dll` i les dades a `release\RelWithDebInfo\rec-time-monitor\`
-amb l'estructura `bin\64bit\` + `data\` que espera l'`.iss`.
+amb l'estructura `bin\64bit\` + `data\` que empaqueta el ZIP.
 
 ### Bugs reals que vam trobar i arreglar només veient els logs de CI
 

@@ -1,19 +1,21 @@
 #include "big-time-editor.hpp"
 #include "time-unit-dial.hpp"
 
+#include <QFont>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QSizePolicy>
 
 namespace {
 
-QLabel *UnitLabel(const QString &text, QWidget *parent)
+QLabel *ColonLabel(QWidget *parent)
 {
-	auto *label = new QLabel(text, parent);
+	auto *label = new QLabel(QStringLiteral(":"), parent);
 	QFont f = label->font();
-	f.setPixelSize(16);
+	f.setPixelSize(34);
 	f.setBold(true);
 	label->setFont(f);
-	label->setStyleSheet("color: rgba(255, 255, 255, 140);");
+	label->setStyleSheet("color: rgba(255, 255, 255, 180);");
 	label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	return label;
 }
@@ -27,17 +29,19 @@ BigTimeEditor::BigTimeEditor(QWidget *parent) : QWidget(parent)
 	seconds_ = new TimeUnitDial(59, this);
 
 	for (TimeUnitDial *dial : {hours_, minutes_, seconds_})
-		dial->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+		dial->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	setMinimumHeight(146);
 
 	auto *layout = new QHBoxLayout(this);
 	layout->setContentsMargins(0, 0, 0, 0);
-	layout->setSpacing(2);
+	layout->setSpacing(10);
 	layout->addWidget(hours_, 1);
-	layout->addWidget(UnitLabel("h", this), 0);
+	layout->addWidget(ColonLabel(this), 0);
 	layout->addWidget(minutes_, 1);
-	layout->addWidget(UnitLabel("m", this), 0);
+	layout->addWidget(ColonLabel(this), 0);
 	layout->addWidget(seconds_, 1);
-	layout->addWidget(UnitLabel("s", this), 0);
 
 	connect(hours_, &TimeUnitDial::valueChanged, this, [this](int) { emit secondsChanged(totalSeconds()); });
 	connect(minutes_, &TimeUnitDial::valueChanged, this, [this](int) { emit secondsChanged(totalSeconds()); });
