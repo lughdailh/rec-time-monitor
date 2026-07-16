@@ -80,6 +80,12 @@ void OpenPluginMonitor(void *)
 	g_dialog->ShowOnScreen(screenIndex, true);
 }
 
+void CloseMonitorWindow(void *)
+{
+	if (g_dialog)
+		g_dialog->close();
+}
+
 void OpenQuickMessageDialog(void *)
 {
 	if (!g_messageDialog) {
@@ -124,12 +130,26 @@ QWidget *CreateMonitorDock(QWidget *parent)
 	PopulateMonitors(g_monitorCombo);
 	layout->addWidget(g_monitorCombo);
 
+	// Re-scan whenever a monitor is plugged/unplugged so the list doesn't go
+	// stale for the lifetime of the OBS session.
+	QObject::connect(qGuiApp, &QGuiApplication::screenAdded, g_monitorCombo,
+			  [](QScreen *) { PopulateMonitors(g_monitorCombo); });
+	QObject::connect(qGuiApp, &QGuiApplication::screenRemoved, g_monitorCombo,
+			  [](QScreen *) { PopulateMonitors(g_monitorCombo); });
+
 	auto *projectorButton = new QPushButton("Obrir el plugin a pantalla sencera", dock);
 	projectorButton->setMinimumHeight(36);
 	QObject::connect(projectorButton, &QPushButton::clicked, dock, []() {
 		OpenPluginMonitor(nullptr);
 	});
 	layout->addWidget(projectorButton);
+
+	auto *closeButton = new QPushButton("Tanca el monitor", dock);
+	closeButton->setMinimumHeight(36);
+	QObject::connect(closeButton, &QPushButton::clicked, dock, []() {
+		CloseMonitorWindow(nullptr);
+	});
+	layout->addWidget(closeButton);
 
 	auto *messageButton = new QPushButton("Obrir editor de missatge", dock);
 	messageButton->setMinimumHeight(36);

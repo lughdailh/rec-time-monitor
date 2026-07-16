@@ -80,7 +80,7 @@ void OBSProgramDisplay::SetOverlayState(const QImage &badgeImage, bool alarmActi
 	pendingBadgeImage_ = badgeImage;
 	pendingAlarmActive_ = alarmActive;
 	pendingAlertColorHex_ = alertColorHex;
-	overlayStateDirty_ = true;
+	badgeStateDirty_ = true;
 }
 
 void OBSProgramDisplay::SetMessageOverlay(const QImage &messageImage, bool visible)
@@ -88,7 +88,7 @@ void OBSProgramDisplay::SetMessageOverlay(const QImage &messageImage, bool visib
 	QMutexLocker locker(&overlayMutex_);
 	pendingMessageImage_ = messageImage;
 	pendingMessageVisible_ = visible;
-	overlayStateDirty_ = true;
+	messageStateDirty_ = true;
 }
 
 void OBSProgramDisplay::UpdateOverlayStateIfNeeded()
@@ -105,50 +105,56 @@ void OBSProgramDisplay::UpdateOverlayStateIfNeeded()
 		messageVisible_ = pendingMessageVisible_;
 		if (!pendingAlertColorHex_.isEmpty())
 			alertColorHex_ = pendingAlertColorHex_;
-		haveNewImage = overlayStateDirty_;
+		haveNewImage = badgeStateDirty_;
 		if (haveNewImage)
 			image = pendingBadgeImage_;
-		haveNewMessageImage = overlayStateDirty_;
+		haveNewMessageImage = messageStateDirty_;
 		if (haveNewMessageImage)
 			messageImage = pendingMessageImage_;
-		overlayStateDirty_ = false;
+		badgeStateDirty_ = false;
+		messageStateDirty_ = false;
 	}
 
 	if (!haveNewImage && !haveNewMessageImage)
 		return;
 
-	if (badgeTexture_) {
-		gs_texture_destroy(badgeTexture_);
-		badgeTexture_ = nullptr;
+	if (haveNewImage) {
+		if (badgeTexture_) {
+			gs_texture_destroy(badgeTexture_);
+			badgeTexture_ = nullptr;
+		}
+
+		if (image.isNull())
+			badgeTextureWidth_ = badgeTextureHeight_ = 0;
+		else {
+			// QImage::Format_ARGB32's in-memory byte order (B, G, R, A on
+			// little-endian) matches GS_BGRA directly, no conversion needed.
+			image = image.convertToFormat(QImage::Format_ARGB32);
+			const uint8_t *data = image.constBits();
+			badgeTexture_ = gs_texture_create(static_cast<uint32_t>(image.width()),
+							   static_cast<uint32_t>(image.height()), GS_BGRA, 1, &data, 0);
+			badgeTextureWidth_ = image.width();
+			badgeTextureHeight_ = image.height();
+		}
 	}
 
-	if (image.isNull())
-		badgeTextureWidth_ = badgeTextureHeight_ = 0;
-	else {
-		// QImage::Format_ARGB32's in-memory byte order (B, G, R, A on
-		// little-endian) matches GS_BGRA directly, no conversion needed.
-		image = image.convertToFormat(QImage::Format_ARGB32);
-		const uint8_t *data = image.constBits();
-		badgeTexture_ = gs_texture_create(static_cast<uint32_t>(image.width()), static_cast<uint32_t>(image.height()),
-					   GS_BGRA, 1, &data, 0);
-		badgeTextureWidth_ = image.width();
-		badgeTextureHeight_ = image.height();
-	}
+	if (haveNewMessageImage) {
+		if (messageTexture_) {
+			gs_texture_destroy(messageTexture_);
+			messageTexture_ = nullptr;
+		}
 
-	if (messageTexture_) {
-		gs_texture_destroy(messageTexture_);
-		messageTexture_ = nullptr;
-	}
-
-	if (messageImage.isNull())
-		messageTextureWidth_ = messageTextureHeight_ = 0;
-	else {
-		messageImage = messageImage.convertToFormat(QImage::Format_ARGB32);
-		const uint8_t *messageData = messageImage.constBits();
-		messageTexture_ = gs_texture_create(static_cast<uint32_t>(messageImage.width()),
-						 static_cast<uint32_t>(messageImage.height()), GS_BGRA, 1, &messageData, 0);
-		messageTextureWidth_ = messageImage.width();
-		messageTextureHeight_ = messageImage.height();
+		if (messageImage.isNull())
+			messageTextureWidth_ = messageTextureHeight_ = 0;
+		else {
+			messageImage = messageImage.convertToFormat(QImage::Format_ARGB32);
+			const uint8_t *messageData = messageImage.constBits();
+			messageTexture_ = gs_texture_create(static_cast<uint32_t>(messageImage.width()),
+							     static_cast<uint32_t>(messageImage.height()), GS_BGRA, 1,
+							     &messageData, 0);
+			messageTextureWidth_ = messageImage.width();
+			messageTextureHeight_ = messageImage.height();
+		}
 	}
 }
 

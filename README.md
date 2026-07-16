@@ -12,20 +12,35 @@ cara a l'equip de plató, perquè vegin quant temps porten de programa.
 
 ## Ús
 
-1. A OBS, ves a `Tools → Monitor de Programa + Cronòmetre`.
-2. Mou la finestra que s'obre a un monitor extern (arrossega-la i posa-la en
-   pantalla completa, `⌃⌘F` amb la finestra activa, o el botó verd de la
-   cantonada de la finestra).
-3. El badge mostra `REC` (vermell) mentre graves, `PAUSA` si la gravació està
-   en pausa, `LIVE` (taronja) si només fas streaming, o `STANDBY` (gris) si no
-   passa res.
-4. Clic dret sobre la imatge del projector per accedir a la configuració o
-   tancar la finestra.
+El plugin afegeix un dock ("REC Time Monitor") a la finestra principal d'OBS
+amb:
+
+- Un desplegable per triar a quina pantalla connectada s'ha d'obrir el
+  monitor (es refresca sol si connectes/desconnectes un monitor).
+- **"Obrir el plugin a pantalla sencera"** — obre (o mou) la finestra del
+  monitor, a pantalla completa, a la pantalla triada al desplegable.
+- **"Tanca el monitor"** — tanca la finestra del monitor si està oberta.
+- **"Obrir editor de missatge"** — escriu un missatge i una durada; es
+  mostra centrat sobre la imatge del monitor (útil per avisar l'equip de
+  plató d'alguna cosa puntual, com "Tall a l'anunci en 10s").
+- **"Preferències"** — el mateix panell de configuració que
+  `Tools → Configuració del Monitor de Programa`.
+
+El mateix es pot obrir des de `Tools → Monitor de Programa + Cronòmetre`
+(equivalent al botó del dock, amb la pantalla que hi hagi triada al
+desplegable en aquell moment) i `Tools → Configuració del Monitor de
+Programa`.
+
+Un cop la finestra del monitor està oberta (normalment a pantalla completa en
+un monitor extern, sense teclat/ratolí fàcilment a mà): el badge mostra `REC`
+(vermell) mentre graves, `PAUSA` si la gravació està en pausa, `LIVE`
+(taronja) si només fas streaming, o `STANDBY` (gris) si no passa res. Per
+tancar-la sense passar pel dock, **Esc** amb la finestra activa la tanca.
 
 ## Configuració
 
-`Tools → Configuració del Monitor de Programa` (o clic dret sobre el
-projector) obre un panell que aplica els canvis a l'instant, sense botó
+`Tools → Configuració del Monitor de Programa` (o el botó "Preferències" del
+dock) obre un panell que aplica els canvis a l'instant, sense botó
 "Aplicar":
 
 - **Avisos de temps**: llista d'avisos, cadascun amb el seu propi temps
@@ -83,7 +98,8 @@ corresponent a <https://github.com/obsproject/obs-studio>) i torna a compilar.
 
 ## Estructura del codi
 
-- `src/plugin-main.cpp` — registre del mòdul i de les entrades de menú.
+- `src/plugin-main.cpp` — registre del mòdul, entrades de menú i el dock
+  ("REC Time Monitor") amb el selector de pantalla i els botons ràpids.
 - `src/time-tracker.{hpp,cpp}` — segueix els events de frontend
   (`OBS_FRONTEND_EVENT_RECORDING_*`, `..._STREAMING_*`) i calcula el temps
   transcorregut (amb gestió de pauses), sense dependre de cap altre plugin.
@@ -99,10 +115,15 @@ corresponent a <https://github.com/obsproject/obs-studio>) i torna a compilar.
     màquina Windows a mà.
 - `src/program-monitor-dialog.{hpp,cpp}` — la finestra: cada 200 ms calcula
   l'estat (color/text/temps del badge, quin avís toca activar i de quin
-  color) i ho envia a `OBSProgramDisplay`. També el menú contextual (clic
-  dret).
+  color, si hi ha un missatge ràpid actiu) i ho envia a `OBSProgramDisplay`.
+  `ShowOnScreen()` la mou i la posa a pantalla completa a la pantalla
+  triada; `Esc` amb la finestra activa la tanca (no té menú contextual).
 - `src/badge-image.{hpp,cpp}` — dibuixa el badge (Qt `QPainter`) a una
   `QImage` amb fons transparent, a mida fixa segons `Settings::ScalePercent`.
+- `src/message-image.{hpp,cpp}` — renderitza el banner del missatge ràpid
+  (mateix mecanisme de textura GPU que el badge).
+- `src/quick-message-dialog.{hpp,cpp}` — el diàleg per escriure el missatge
+  ràpid i la seva durada, obert des del dock.
 - `src/time-unit-dial.{hpp,cpp}` — el número gran "00" clicable (meitat
   superior = +1, inferior = −1) que fa servir `BigTimeEditor`.
 - `src/big-time-editor.{hpp,cpp}` — combina tres `TimeUnitDial` (h/m/s) per

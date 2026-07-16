@@ -55,7 +55,8 @@ private:
 	bool pendingAlarmActive_ = false;
 	bool pendingMessageVisible_ = false;
 	QString pendingAlertColorHex_;
-	bool overlayStateDirty_ = false;
+	bool badgeStateDirty_ = false;
+	bool messageStateDirty_ = false;
 
 	// Video-thread-only state, touched only inside Draw()/DrawCallback().
 	gs_texture_t *badgeTexture_ = nullptr;

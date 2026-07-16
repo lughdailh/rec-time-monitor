@@ -7,6 +7,7 @@
 
 #include <QAction>
 #include <QGuiApplication>
+#include <QKeyEvent>
 #include <QResizeEvent>
 #include <QWindow>
 #include <QTimer>
@@ -96,6 +97,19 @@ void ProgramMonitorDialog::resizeEvent(QResizeEvent *event)
 	display_->setGeometry(rect());
 }
 
+void ProgramMonitorDialog::keyPressEvent(QKeyEvent *event)
+{
+	// The window normally opens fullscreen on an external "confidence
+	// monitor" with no keyboard/mouse handy on that screen, and there is no
+	// window chrome to close it from once it is up. Escape is the one
+	// universally-known way out, whichever screen it ends up on.
+	if (event->key() == Qt::Key_Escape) {
+		close();
+		return;
+	}
+	QWidget::keyPressEvent(event);
+}
+
 void ProgramMonitorDialog::UpdateOverlay()
 {
 	const TimeTracker::State state = TimeTracker::Instance().GetState();
@@ -137,6 +151,15 @@ void ProgramMonitorDialog::UpdateOverlay()
 
 	const double scale = Settings::Instance().ScalePercent() / 100.0;
 	display_->SetOverlayState(RenderBadgeImage(colorHex, badgeText, FormatHMS(ms), scale), alarmActive, alertColorHex);
+
+	// Only push a new message texture on activate/deactivate, not on every
+	// 200ms tick: the text and scale don't change while a message is up, so
+	// re-rendering and re-uploading it every tick would just be wasted GPU
+	// work for the whole duration it's shown.
 	const bool quickMessageActive = !quickMessage_.isEmpty() && now < quickMessageUntil_;
-	display_->SetMessageOverlay(quickMessageActive ? RenderMessageImage(quickMessage_, scale) : QImage(), quickMessageActive);
+	if (quickMessageActive != quickMessageWasActive_) {
+		display_->SetMessageOverlay(quickMessageActive ? RenderMessageImage(quickMessage_, scale) : QImage(),
+					     quickMessageActive);
+		quickMessageWasActive_ = quickMessageActive;
+	}
 }
