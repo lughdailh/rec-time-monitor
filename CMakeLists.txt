@@ -49,27 +49,28 @@ endif()
 
 target_sources(
   ${CMAKE_PROJECT_NAME}
-  PRIVATE src/plugin-main.cpp
-          src/time-tracker.cpp
-          src/time-tracker.hpp
-          src/program-display.cpp
-          src/program-display.hpp
-          src/program-monitor-dialog.cpp
-          src/program-monitor-dialog.hpp
-          src/badge-image.cpp
-          src/badge-image.hpp
-          src/message-image.cpp
-          src/message-image.hpp
-          src/quick-message-dialog.cpp
-          src/quick-message-dialog.hpp
-          src/settings.cpp
-          src/settings.hpp
-          src/settings-dialog.cpp
-          src/settings-dialog.hpp
-          src/time-unit-dial.cpp
-          src/time-unit-dial.hpp
-          src/big-time-editor.cpp
-          src/big-time-editor.hpp
+  PRIVATE
+    src/plugin-main.cpp
+    src/time-tracker.cpp
+    src/time-tracker.hpp
+    src/program-display.cpp
+    src/program-display.hpp
+    src/program-monitor-dialog.cpp
+    src/program-monitor-dialog.hpp
+    src/badge-image.cpp
+    src/badge-image.hpp
+    src/message-image.cpp
+    src/message-image.hpp
+    src/quick-message-dialog.cpp
+    src/quick-message-dialog.hpp
+    src/settings.cpp
+    src/settings.hpp
+    src/settings-dialog.cpp
+    src/settings-dialog.hpp
+    src/time-unit-dial.cpp
+    src/time-unit-dial.hpp
+    src/big-time-editor.cpp
+    src/big-time-editor.hpp
 )
 
 # CreateDisplay() (the bit that hands OBS a native window handle) is the only

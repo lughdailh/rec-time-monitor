@@ -21,10 +21,7 @@ QString FormatHMS(int64_t ms)
 	const int64_t h = totalSeconds / 3600;
 	const int64_t m = (totalSeconds % 3600) / 60;
 	const int64_t s = totalSeconds % 60;
-	return QString("%1:%2:%3")
-		.arg(h, 2, 10, QChar('0'))
-		.arg(m, 2, 10, QChar('0'))
-		.arg(s, 2, 10, QChar('0'));
+	return QString("%1:%2:%3").arg(h, 2, 10, QChar('0')).arg(m, 2, 10, QChar('0')).arg(s, 2, 10, QChar('0'));
 }
 
 } // namespace
@@ -150,7 +147,8 @@ void ProgramMonitorDialog::UpdateOverlay()
 	}
 
 	const double scale = Settings::Instance().ScalePercent() / 100.0;
-	display_->SetOverlayState(RenderBadgeImage(colorHex, badgeText, FormatHMS(ms), scale), alarmActive, alertColorHex);
+	display_->SetOverlayState(RenderBadgeImage(colorHex, badgeText, FormatHMS(ms), scale), alarmActive,
+				  alertColorHex);
 
 	// Only push a new message texture on activate/deactivate, not on every
 	// 200ms tick: the text and scale don't change while a message is up, so
@@ -159,7 +157,7 @@ void ProgramMonitorDialog::UpdateOverlay()
 	const bool quickMessageActive = !quickMessage_.isEmpty() && now < quickMessageUntil_;
 	if (quickMessageActive != quickMessageWasActive_) {
 		display_->SetMessageOverlay(quickMessageActive ? RenderMessageImage(quickMessage_, scale) : QImage(),
-					     quickMessageActive);
+					    quickMessageActive);
 		quickMessageWasActive_ = quickMessageActive;
 	}
 }

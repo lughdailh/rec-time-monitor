@@ -61,7 +61,7 @@ void OBSProgramDisplay::resizeEvent(QResizeEvent *event)
 
 	const qreal pixelRatio = devicePixelRatioF();
 	obs_display_resize(display_, static_cast<uint32_t>(width() * pixelRatio),
-			    static_cast<uint32_t>(height() * pixelRatio));
+			   static_cast<uint32_t>(height() * pixelRatio));
 }
 
 void OBSProgramDisplay::DestroyDisplay()
@@ -132,7 +132,7 @@ void OBSProgramDisplay::UpdateOverlayStateIfNeeded()
 			image = image.convertToFormat(QImage::Format_ARGB32);
 			const uint8_t *data = image.constBits();
 			badgeTexture_ = gs_texture_create(static_cast<uint32_t>(image.width()),
-							   static_cast<uint32_t>(image.height()), GS_BGRA, 1, &data, 0);
+							  static_cast<uint32_t>(image.height()), GS_BGRA, 1, &data, 0);
 			badgeTextureWidth_ = image.width();
 			badgeTextureHeight_ = image.height();
 		}
@@ -150,8 +150,8 @@ void OBSProgramDisplay::UpdateOverlayStateIfNeeded()
 			messageImage = messageImage.convertToFormat(QImage::Format_ARGB32);
 			const uint8_t *messageData = messageImage.constBits();
 			messageTexture_ = gs_texture_create(static_cast<uint32_t>(messageImage.width()),
-							     static_cast<uint32_t>(messageImage.height()), GS_BGRA, 1,
-							     &messageData, 0);
+							    static_cast<uint32_t>(messageImage.height()), GS_BGRA, 1,
+							    &messageData, 0);
 			messageTextureWidth_ = messageImage.width();
 			messageTextureHeight_ = messageImage.height();
 		}
@@ -178,7 +178,7 @@ void OBSProgramDisplay::DrawAlertBorder(double canvasW, double canvasH)
 
 	struct vec4 color;
 	vec4_set(&color, static_cast<float>(qcolor.redF()), static_cast<float>(qcolor.greenF()),
-		  static_cast<float>(qcolor.blueF()), static_cast<float>(alpha));
+		 static_cast<float>(qcolor.blueF()), static_cast<float>(alpha));
 	gs_effect_set_vec4(colorParam, &color);
 
 	gs_blend_state_push();
@@ -187,10 +187,10 @@ void OBSProgramDisplay::DrawAlertBorder(double canvasW, double canvasH)
 	const struct {
 		double x, y, w, h;
 	} strips[4] = {
-		{0.0, 0.0, canvasW, thickness},                     // top
-		{0.0, canvasH - thickness, canvasW, thickness},      // bottom
-		{0.0, 0.0, thickness, canvasH},                      // left
-		{canvasW - thickness, 0.0, thickness, canvasH},      // right
+		{0.0, 0.0, canvasW, thickness},                 // top
+		{0.0, canvasH - thickness, canvasW, thickness}, // bottom
+		{0.0, 0.0, thickness, canvasH},                 // left
+		{canvasW - thickness, 0.0, thickness, canvasH}, // right
 	};
 
 	while (gs_effect_loop(solid, "Solid")) {
@@ -287,7 +287,7 @@ void OBSProgramDisplay::Draw(uint32_t cx, uint32_t cy)
 			gs_matrix_push();
 			gs_matrix_translate3f(badgeX, badgeY, 0.0f);
 			gs_draw_sprite(badgeTexture_, 0, static_cast<uint32_t>(badgeTextureWidth_),
-					static_cast<uint32_t>(badgeTextureHeight_));
+				       static_cast<uint32_t>(badgeTextureHeight_));
 			gs_matrix_pop();
 		}
 
@@ -309,7 +309,7 @@ void OBSProgramDisplay::Draw(uint32_t cx, uint32_t cy)
 			gs_matrix_push();
 			gs_matrix_translate3f(messageX, messageY, 0.0f);
 			gs_draw_sprite(messageTexture_, 0, static_cast<uint32_t>(messageTextureWidth_),
-					static_cast<uint32_t>(messageTextureHeight_));
+				       static_cast<uint32_t>(messageTextureHeight_));
 			gs_matrix_pop();
 		}
 

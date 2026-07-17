@@ -21,8 +21,9 @@ QPushButton *ColorSwatchButton(const QString &colorHex, QWidget *parent)
 	auto *button = new QPushButton(parent);
 	button->setFixedSize(28, 28);
 	button->setCursor(Qt::PointingHandCursor);
-	button->setStyleSheet(QString("background-color: %1; border-radius: 6px; border: 1px solid rgba(255,255,255,40);")
-				      .arg(colorHex));
+	button->setStyleSheet(
+		QString("background-color: %1; border-radius: 6px; border: 1px solid rgba(255,255,255,40);")
+			.arg(colorHex));
 	return button;
 }
 
@@ -75,7 +76,8 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QWidget(parent, Qt::Window)
 	}
 	badgeLayout->addRow("Posició:", cornerCombo_);
 	connect(cornerCombo_, &QComboBox::currentIndexChanged, this, [this](int index) {
-		Settings::Instance().SetCorner(static_cast<Settings::BadgeCorner>(cornerCombo_->itemData(index).toInt()));
+		Settings::Instance().SetCorner(
+			static_cast<Settings::BadgeCorner>(cornerCombo_->itemData(index).toInt()));
 	});
 
 	scaleSpin_ = new QSpinBox(badgeGroup);
@@ -84,7 +86,8 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QWidget(parent, Qt::Window)
 	scaleSpin_->setSingleStep(10);
 	scaleSpin_->setValue(Settings::Instance().ScalePercent());
 	badgeLayout->addRow("Mida:", scaleSpin_);
-	connect(scaleSpin_, &QSpinBox::valueChanged, this, [](int percent) { Settings::Instance().SetScalePercent(percent); });
+	connect(scaleSpin_, &QSpinBox::valueChanged, this,
+		[](int percent) { Settings::Instance().SetScalePercent(percent); });
 
 	rootLayout->addWidget(badgeGroup);
 
@@ -122,8 +125,8 @@ void SettingsDialog::RebuildAlertRows()
 				current = chosen.name();
 				Settings::Instance().SetAlertColor(index, current);
 				colorButton->setStyleSheet(QString("background-color: %1; border-radius: 6px; "
-								    "border: 1px solid rgba(255,255,255,40);")
-								    .arg(current));
+								   "border: 1px solid rgba(255,255,255,40);")
+								   .arg(current));
 			});
 		rowLayout->addWidget(colorButton);
 

@@ -70,7 +70,7 @@ void TimeUnitDial::paintEvent(QPaintEvent *)
 		p.drawRoundedRect(rect().adjusted(4, 4, -4, -4), 16, 16);
 
 		const QRectF half = hoverTopHalf_ ? QRectF(0, 0, width(), height() / 2.0)
-						   : QRectF(0, height() / 2.0, width(), height() / 2.0);
+						  : QRectF(0, height() / 2.0, width(), height() / 2.0);
 		p.setBrush(QColor(255, 255, 255, 22));
 		p.drawRoundedRect(half.adjusted(8, 8, -8, -8), 12, 12);
 	}
@@ -81,8 +81,7 @@ void TimeUnitDial::paintEvent(QPaintEvent *)
 	numberFont.setStyleHint(QFont::Monospace);
 	p.setFont(numberFont);
 	p.setPen(baseText);
-	p.drawText(QRect(0, 18, width(), height() - 36), Qt::AlignCenter,
-		   QString("%1").arg(value_, 2, 10, QChar('0')));
+	p.drawText(QRect(0, 18, width(), height() - 36), Qt::AlignCenter, QString("%1").arg(value_, 2, 10, QChar('0')));
 
 	QColor chevronColor = baseText;
 	chevronColor.setAlpha(hovering_ ? 180 : 110);

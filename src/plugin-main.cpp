@@ -90,15 +90,16 @@ void OpenQuickMessageDialog(void *)
 {
 	if (!g_messageDialog) {
 		g_messageDialog = new QuickMessageDialog(MainWindow());
-		QObject::connect(g_messageDialog, &QuickMessageDialog::SendRequested, MainWindow(), [](const QString &text, int durationMs) {
-			const QString trimmed = text.trimmed();
-			if (trimmed.isEmpty())
-				return;
-			if (!g_dialog)
-				OpenPluginMonitor(nullptr);
-			if (g_dialog)
-				g_dialog->ShowQuickMessage(trimmed, durationMs);
-		});
+		QObject::connect(g_messageDialog, &QuickMessageDialog::SendRequested, MainWindow(),
+				 [](const QString &text, int durationMs) {
+					 const QString trimmed = text.trimmed();
+					 if (trimmed.isEmpty())
+						 return;
+					 if (!g_dialog)
+						 OpenPluginMonitor(nullptr);
+					 if (g_dialog)
+						 g_dialog->ShowQuickMessage(trimmed, durationMs);
+				 });
 	}
 	g_messageDialog->show();
 	g_messageDialog->raise();
@@ -133,36 +134,28 @@ QWidget *CreateMonitorDock(QWidget *parent)
 	// Re-scan whenever a monitor is plugged/unplugged so the list doesn't go
 	// stale for the lifetime of the OBS session.
 	QObject::connect(qGuiApp, &QGuiApplication::screenAdded, g_monitorCombo,
-			  [](QScreen *) { PopulateMonitors(g_monitorCombo); });
+			 [](QScreen *) { PopulateMonitors(g_monitorCombo); });
 	QObject::connect(qGuiApp, &QGuiApplication::screenRemoved, g_monitorCombo,
-			  [](QScreen *) { PopulateMonitors(g_monitorCombo); });
+			 [](QScreen *) { PopulateMonitors(g_monitorCombo); });
 
 	auto *projectorButton = new QPushButton("Obrir el plugin a pantalla sencera", dock);
 	projectorButton->setMinimumHeight(36);
-	QObject::connect(projectorButton, &QPushButton::clicked, dock, []() {
-		OpenPluginMonitor(nullptr);
-	});
+	QObject::connect(projectorButton, &QPushButton::clicked, dock, []() { OpenPluginMonitor(nullptr); });
 	layout->addWidget(projectorButton);
 
 	auto *closeButton = new QPushButton("Tanca el monitor", dock);
 	closeButton->setMinimumHeight(36);
-	QObject::connect(closeButton, &QPushButton::clicked, dock, []() {
-		CloseMonitorWindow(nullptr);
-	});
+	QObject::connect(closeButton, &QPushButton::clicked, dock, []() { CloseMonitorWindow(nullptr); });
 	layout->addWidget(closeButton);
 
 	auto *messageButton = new QPushButton("Obrir editor de missatge", dock);
 	messageButton->setMinimumHeight(36);
-	QObject::connect(messageButton, &QPushButton::clicked, dock, []() {
-		OpenQuickMessageDialog(nullptr);
-	});
+	QObject::connect(messageButton, &QPushButton::clicked, dock, []() { OpenQuickMessageDialog(nullptr); });
 	layout->addWidget(messageButton);
 
 	auto *preferencesButton = new QPushButton("Preferències", dock);
 	preferencesButton->setMinimumHeight(36);
-	QObject::connect(preferencesButton, &QPushButton::clicked, dock, []() {
-		OpenPreferencesDialog(nullptr);
-	});
+	QObject::connect(preferencesButton, &QPushButton::clicked, dock, []() { OpenPreferencesDialog(nullptr); });
 	layout->addWidget(preferencesButton);
 
 	layout->addStretch();
