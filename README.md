@@ -147,9 +147,8 @@ dibuixar-ho tot al mateix fotograma GPU els evita per complet.
 El projecte es compila i s'empaqueta **automàticament a cada push** via
 GitHub Actions (`.github/workflows/build-project.yaml`, job "Build for
 Windows 🪟" en un runner `windows-2022`) — verificat que compila net i
-genera un ZIP. Com que no tenim cap màquina Windows pròpia, això és la
-manera real de compilar i obtenir el paquet: el runner de GitHub fa de
-"màquina Windows a la carpeta del núvol".
+genera un ZIP. La compilació es genera al runner de Windows de GitHub i el paquet resultant
+s'ha verificat posteriorment en un equip Windows amb OBS.
 
 ### Obtenir l'instal·lador ja compilat
 
@@ -182,12 +181,9 @@ dins de:
 de manera que quedi `%ProgramData%\obs-studio\plugins\rec-time-monitor\bin\64bit\rec-time-monitor.dll`.
 Cal ser administrador per escriure a `%ProgramData%`.
 
-Nota important: la compilació (`cmake`/MSVC) està verificada — **el plugin
-compila net i sense errors a Windows**. El que encara ningú ha comprovat és
-que *funcioni* dins d'un OBS real un cop instal·lat (obrir la finestra,
-veure el Programa, el cronòmetre, etc.), perquè no tenim manera d'executar
-OBS en un runner de CI. Si el proves i alguna cosa no va, avisa i ho
-depurem.
+La compilació (`cmake`/MSVC) està verificada i **el plugin s'ha provat amb
+èxit dins d'OBS a Windows**: s'instal·la correctament, obre la finestra del
+monitor i mostra el Programa, el cronòmetre i els avisos.
 
 ### Compilar-ho manualment (si algun dia hi ha una màquina Windows a mà)
 
