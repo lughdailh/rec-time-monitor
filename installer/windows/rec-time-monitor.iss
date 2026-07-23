@@ -1,12 +1,11 @@
 ; Inno Setup script for REC Time Monitor (OBS plugin).
 ;
-; UNTESTED: written and validated for *syntax* only (no Windows machine
-; available to actually run it — see README.md's "Windows" section). It
-; expects the plugin to already be built AND INSTALLED via:
+; The installer has been tested successfully on Windows. It expects the plugin
+; to already be built AND INSTALLED via:
 ;
 ;   cmake --preset windows-x64
 ;   cmake --build --preset windows-x64
-;   cmake --install build_x64 --prefix release\RelWithDebInfo --config RelWithDebInfo
+;   cmake --install build_x64 --prefix release\RelWithDebInfo --config Release
 ;
 ; The plain build step alone is NOT enough: cmake/windows/helpers.cmake only
 ; copies data\ files into build_x64\rundir\...\ as a post-build step for local
