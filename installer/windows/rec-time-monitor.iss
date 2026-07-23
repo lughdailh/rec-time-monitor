@@ -5,7 +5,7 @@
 ;
 ;   cmake --preset windows-x64
 ;   cmake --build --preset windows-x64
-;   cmake --install build_x64 --prefix release\RelWithDebInfo --config Release
+;   cmake --install build_x64 --prefix release\Release --config Release
 ;
 ; The plain build step alone is NOT enough: cmake/windows/helpers.cmake only
 ; copies data\ files into build_x64\rundir\...\ as a post-build step for local
@@ -23,7 +23,7 @@
 #define MyAppVersion "2.0.0"
 #define MyAppPublisher "CCS"
 #define PluginDirName "rec-time-monitor"
-#define BuiltPluginDir "..\..\release\RelWithDebInfo\" + PluginDirName
+#define BuiltPluginDir "..\..\release\Release\" + PluginDirName
 
 [Setup]
 AppId={{5B1F7C2A-6E3D-4B8A-9C1E-REC-TIME-MONITOR}}
