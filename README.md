@@ -216,3 +216,18 @@ prova de per què calia aquesta infraestructura de CI:
   `obs-frontend-api` i `w32-pthreads` a Windows a `<prefix>/cmake/<nom>/`
   (sense `lib/` ni `share/` pel mig) — una ubicació que `find_package` no
   cerca per defecte. Calia apuntar `libobs_DIR` etc. directament.
+
+## Col·laborar
+
+Les contribucions són benvingudes. Si vols proposar una millora, corregir un
+error o ampliar la compatibilitat del plugin, obre una *issue* o envia una
+*pull request*. Consulta [CONTRIBUTING.md](CONTRIBUTING.md) abans de començar.
+
+Aquest projecte es distribueix sota la llicència [GNU GPL v2](LICENSE).
+
+## Dona suport al projecte
+
+Si REC Time Monitor et resulta útil i vols ajudar a mantenir-ne el
+desenvolupament:
+
+[![Buy me a coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/totalamandanga)
