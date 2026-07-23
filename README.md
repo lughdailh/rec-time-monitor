@@ -109,10 +109,8 @@ corresponent a <https://github.com/obsproject/obs-studio>) i torna a compilar.
   d'avís com a textures GPU. Multiplataforma excepte `CreateDisplay()` (el
   tros que dona a OBS el handle de finestra nativa), que viu a part:
   - `src/program-display-mac.mm` — versió macOS (`NSView`).
-  - `src/program-display-win.cpp` — versió Windows (`HWND`); compila
-    correctament a la CI de GitHub Actions (vegeu més avall), però mai s'ha
-    provat *en execució* dins d'un OBS real a Windows, perquè no tenim cap
-    màquina Windows a mà.
+  - `src/program-display-win.cpp` — versió Windows (`HWND`); compila correctament a la CI de GitHub Actions i s'ha provat amb èxit
+  dins d'OBS en un equip Windows (vegeu més avall).
 - `src/program-monitor-dialog.{hpp,cpp}` — la finestra: cada 200 ms calcula
   l'estat (color/text/temps del badge, quin avís toca activar i de quin
   color, si hi ha un missatge ràpid actiu) i ho envia a `OBSProgramDisplay`.
@@ -185,7 +183,7 @@ La compilació (`cmake`/MSVC) està verificada i **el plugin s'ha provat amb
 èxit dins d'OBS a Windows**: s'instal·la correctament, obre la finestra del
 monitor i mostra el Programa, el cronòmetre i els avisos.
 
-### Compilar-ho manualment (si algun dia hi ha una màquina Windows a mà)
+### Compilar-ho manualment a Windows
 
 ```sh
 cmake --preset windows-x64
