@@ -6,6 +6,7 @@
 #include <QPainter>
 
 #include <algorithm>
+#include <obs-module.h>
 
 namespace {
 
@@ -47,9 +48,12 @@ QImage RenderBadgeImage(const QString &colorHex, const QString &badgeText, const
 	const QFontMetrics labelMetrics(LabelFont(scale));
 	const QFontMetrics timeMetrics(TimeFont(scale));
 
-	// Fixed to the widest possible content ("STANDBY" / "00:00:00") so the
-	// badge never changes size as the text changes.
-	const int labelWidth = labelMetrics.horizontalAdvance("STANDBY");
+	// Reserve enough room for every translated state so the badge never
+	// changes size (or clips text) as recording state changes.
+	const int labelWidth = std::max({labelMetrics.horizontalAdvance(obs_module_text("Status.Standby")),
+					 labelMetrics.horizontalAdvance(obs_module_text("Status.Paused")),
+					 labelMetrics.horizontalAdvance(obs_module_text("Status.Recording")),
+					 labelMetrics.horizontalAdvance(obs_module_text("Status.Streaming"))});
 	const int timeWidth = timeMetrics.horizontalAdvance("00:00:00");
 
 	const int width = padding + dotSize + spacing + labelWidth + spacing + timeWidth + padding;

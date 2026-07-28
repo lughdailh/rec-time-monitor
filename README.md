@@ -12,24 +12,25 @@ cara a l'equip de plató, perquè vegin quant temps porten de programa.
 
 ## Ús
 
-El plugin afegeix un dock ("REC Time Monitor") a la finestra principal d'OBS
-amb:
+El plugin afegeix l'acoblador **rtm2** a la finestra principal d'OBS. És
+l'únic punt d'entrada del plugin; no afegeix opcions al menú `Eines`. Mostra:
 
-- Un desplegable per triar a quina pantalla connectada s'ha d'obrir el
-  monitor (es refresca sol si connectes/desconnectes un monitor).
-- **"Obrir el plugin a pantalla sencera"** — obre (o mou) la finestra del
-  monitor, a pantalla completa, a la pantalla triada al desplegable.
-- **"Tanca el monitor"** — tanca la finestra del monitor si està oberta.
-- **"Obrir editor de missatge"** — escriu un missatge i una durada; es
-  mostra centrat sobre la imatge del monitor (útil per avisar l'equip de
-  plató d'alguna cosa puntual, com "Tall a l'anunci en 10s").
-- **"Preferències"** — el mateix panell de configuració que
-  `Tools → Configuració del Monitor de Programa`.
+- El temps de gravació o emissió en directe, amb un indicador d'estat.
+- El temps que falta per arribar a la propera marca configurada.
+- **MISSATGE** — obre l'editor de missatge i durada; el text es mostra
+  centrat sobre la imatge del monitor. També inclou una columna de frases
+  preparades: se seleccionen i s'envien amb el botó corresponent, i amb doble
+  clic se n'edita el text directament. Els canvis queden desats per a les
+  sessions següents.
+- **Monitor ON/OFF** — mostra o oculta la sortida. El candau evita apagar-la
+  o tancar-ne la finestra accidentalment.
+- **Configuració** — obre una finestra gran amb pestanyes separades per a
+  l'aparença del cronòmetre i les marques de temps.
 
-El mateix es pot obrir des de `Tools → Monitor de Programa + Cronòmetre`
-(equivalent al botó del dock, amb la pantalla que hi hagi triada al
-desplegable en aquell moment) i `Tools → Configuració del Monitor de
-Programa`.
+El primer control de configuració tria la sortida: una finestra flotant
+centrada al 70% de la pantalla principal o qualsevol monitor connectat a
+pantalla completa. La selecció queda desada i es restaura en arrencar OBS si
+aquella pantalla continua disponible.
 
 Un cop la finestra del monitor està oberta (normalment a pantalla completa en
 un monitor extern, sense teclat/ratolí fàcilment a mà): el badge mostra `REC`
@@ -39,16 +40,15 @@ tancar-la sense passar pel dock, **Esc** amb la finestra activa la tanca.
 
 ## Configuració
 
-`Tools → Configuració del Monitor de Programa` (o el botó "Preferències" del
-dock) obre un panell que aplica els canvis a l'instant, sense botó
-"Aplicar":
+El botó **Configuració** del dock obre un panell que aplica els canvis a
+l'instant, sense botó "Aplicar":
 
-- **Avisos de temps**: llista d'avisos, cadascun amb el seu propi temps
-  (format gran "00h 00m 00s" — clic a la meitat superior d'un número per
-  pujar-lo, a la inferior per baixar-lo, sense caselles ni botons) i el seu
-  propi color. En arribar-hi, el marc de la imatge canvia al color d'aquell
-  avís; si se'n superen diversos, mana el més recent assolit. Botó
-  "+ Afegeix un avís" per crear-ne més, "✕" per eliminar-ne.
+- **Marques de temps**: cada marca té un timecode `HH:MM:SS`, color, durada
+  de l'avís i text opcional. El timecode es pot escriure o ajustar amb
+  ↑/↓; mantenint la tecla premuda, el pas s'accelera progressivament. Durant
+  la durada configurada s'activa el marc de color i es mostra el text.
+  **MISSATGE** manual té prioritat si coincideixen. Botó "+ Afegeix una
+  marca" per crear-ne més i "×" per eliminar-ne.
 - **Posició** del cronòmetre: les 4 cantonades o centrat a dalt/a baix.
 - **Mida** del cronòmetre: 100%–300%.
 
@@ -67,9 +67,12 @@ Això compila el plugin i el copia a
 Cal **reiniciar OBS** perquè el carregui (o el detecti per primer cop).
 
 Nota: el build s'ha de fer fora d'aquesta carpeta (sincronitzada amb iCloud
-Drive) — per això l'script compila a `/tmp` i només copia el resultat final
-aquí/a OBS. Els fitxers dins d'iCloud Drive porten metadades que fan fallar
-`codesign`.
+Drive) — per això l'script sincronitza el codi a
+`/tmp/rec-time-monitor-source-macos`, compila a `/tmp` i només copia el
+resultat final a OBS. Això també manté fora d'iCloud la compilació niada de
+les dependències d'OBS; si només es movia el directori de build, Xcode encara
+podia quedar bloquejat dins `plugin-src/.deps`. Els fitxers dins d'iCloud
+Drive també poden portar metadades que fan fallar `codesign`.
 
 ### Instal·lador `.pkg` (macOS)
 
@@ -223,7 +226,9 @@ Les contribucions són benvingudes. Si vols proposar una millora, corregir un
 error o ampliar la compatibilitat del plugin, obre una *issue* o envia una
 *pull request*. Consulta [CONTRIBUTING.md](CONTRIBUTING.md) abans de començar.
 
-Aquest projecte es distribueix sota la llicència [GNU GPL v2](LICENSE).
+Aquest projecte es distribueix sota la llicència
+[GNU GPL v2 o posterior](LICENSE) (`GPL-2.0-or-later`). Consulta també
+[NOTICE](NOTICE).
 
 ## Dona suport al projecte
 

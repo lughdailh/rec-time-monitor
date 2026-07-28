@@ -44,6 +44,10 @@ void Settings::Load()
 	QSettings settings(path, QSettings::IniFormat);
 	corner_ = settings.value("corner", static_cast<int>(BadgeCorner::TopRight)).toInt();
 	scalePercent_ = settings.value("scalePercent", 200).toInt();
+	monitorTarget_ = settings.value("monitorTarget").toString();
+	monitorEnabled_ = settings.value("monitorEnabled", !monitorTarget_.isEmpty()).toBool();
+	monitorLocked_ = settings.value("monitorLocked", false).toBool();
+	messagePresets_ = settings.value("messagePresets").toStringList();
 
 	QVector<AlertEntry> alerts;
 	const int count = settings.beginReadArray("alerts");
@@ -52,6 +56,8 @@ void Settings::Load()
 		AlertEntry entry;
 		entry.seconds = settings.value("seconds", 60).toInt();
 		entry.colorHex = settings.value("colorHex", "#ff3b30").toString();
+		entry.durationSeconds = settings.value("durationSeconds", 5).toInt();
+		entry.message = settings.value("message").toString();
 		alerts.append(entry);
 	}
 	settings.endArray();
@@ -60,7 +66,7 @@ void Settings::Load()
 	if (alerts.isEmpty() && settings.contains("alarmMinutes")) {
 		const int legacyMinutes = settings.value("alarmMinutes", 0).toInt();
 		if (legacyMinutes > 0)
-			alerts.append(AlertEntry{legacyMinutes * 60, "#ff3b30"});
+			alerts.append(AlertEntry{legacyMinutes * 60, "#ff3b30", 5, QString()});
 	}
 
 	QMutexLocker locker(&alertsMutex_);
@@ -77,6 +83,10 @@ void Settings::Save()
 	settings.remove("alarmMinutes"); // superseded by the "alerts" array
 	settings.setValue("corner", corner_.load());
 	settings.setValue("scalePercent", scalePercent_.load());
+	settings.setValue("monitorTarget", monitorTarget_);
+	settings.setValue("monitorEnabled", monitorEnabled_);
+	settings.setValue("monitorLocked", monitorLocked_);
+	settings.setValue("messagePresets", messagePresets_);
 
 	QVector<AlertEntry> alerts;
 	{
@@ -89,6 +99,8 @@ void Settings::Save()
 		settings.setArrayIndex(i);
 		settings.setValue("seconds", alerts[i].seconds);
 		settings.setValue("colorHex", alerts[i].colorHex);
+		settings.setValue("durationSeconds", alerts[i].durationSeconds);
+		settings.setValue("message", alerts[i].message);
 	}
 	settings.endArray();
 }
@@ -105,6 +117,30 @@ void Settings::SetScalePercent(int percent)
 	Save();
 }
 
+void Settings::SetMonitorTarget(const QString &target)
+{
+	monitorTarget_ = target;
+	Save();
+}
+
+void Settings::SetMonitorEnabled(bool enabled)
+{
+	monitorEnabled_ = enabled;
+	Save();
+}
+
+void Settings::SetMonitorLocked(bool locked)
+{
+	monitorLocked_ = locked;
+	Save();
+}
+
+void Settings::SetMessagePresets(const QStringList &presets)
+{
+	messagePresets_ = presets;
+	Save();
+}
+
 QVector<AlertEntry> Settings::Alerts() const
 {
 	QMutexLocker locker(&alertsMutex_);
@@ -116,7 +152,7 @@ int Settings::AddAlert(int seconds, const QString &colorHex)
 	int index;
 	{
 		QMutexLocker locker(&alertsMutex_);
-		alerts_.append(AlertEntry{seconds, colorHex});
+		alerts_.append(AlertEntry{seconds, colorHex, 5, QString()});
 		index = alerts_.size() - 1;
 	}
 	Save();
@@ -152,6 +188,28 @@ void Settings::SetAlertColor(int index, const QString &colorHex)
 		if (index < 0 || index >= alerts_.size())
 			return;
 		alerts_[index].colorHex = colorHex;
+	}
+	Save();
+}
+
+void Settings::SetAlertDuration(int index, int seconds)
+{
+	{
+		QMutexLocker locker(&alertsMutex_);
+		if (index < 0 || index >= alerts_.size())
+			return;
+		alerts_[index].durationSeconds = seconds;
+	}
+	Save();
+}
+
+void Settings::SetAlertMessage(int index, const QString &message)
+{
+	{
+		QMutexLocker locker(&alertsMutex_);
+		if (index < 0 || index >= alerts_.size())
+			return;
+		alerts_[index].message = message.trimmed();
 	}
 	Save();
 }

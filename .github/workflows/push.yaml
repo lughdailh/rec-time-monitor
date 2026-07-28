@@ -91,6 +91,16 @@ jobs:
             done
           done
 
+          version="${{ steps.check.outputs.version }}"
+          for archive in *-"${version}"-macos-universal.zip; do
+            project="${archive%-${version}-macos-universal.zip}"
+            cp "${archive}" "${project}-latest-version-macos-universal.zip"
+          done
+          for archive in *-"${version}"-windows-x64.zip; do
+            project="${archive%-${version}-windows-x64.zip}"
+            cp "${archive}" "${project}-latest-version-windows-x64.zip"
+          done
+
       - name: Generate Checksums 🪪
         if: fromJSON(steps.check.outputs.validTag)
         run: |

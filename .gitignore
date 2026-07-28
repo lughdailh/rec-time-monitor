@@ -15,6 +15,7 @@
 !CMakeLists.txt
 !CMakePresets.json
 !LICENSE
+!NOTICE
 !README.md
 !build-macos.sh
 !build-macos-installer.sh

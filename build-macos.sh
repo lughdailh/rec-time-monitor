@@ -9,11 +9,32 @@
 set -euo pipefail
 
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCAL_SRC_DIR="/tmp/rec-time-monitor-source-macos"
 BUILD_DIR="/tmp/rec-time-monitor-build-macos"
 PLUGINS_DIR="$HOME/Library/Application Support/obs-studio/plugins"
 DEVELOPER_ID_APPLICATION="Developer ID Application: MOIZ I BARTRA PRODUCCIONS SL (B5DRNCGUYN)"
 
-cmake -S "$SRC_DIR" -B "$BUILD_DIR" -G Xcode \
+# CMake's OBS bootstrap stores and builds its nested dependencies under the
+# source directory. Pointing only BUILD_DIR at /tmp is therefore not enough
+# when the checkout lives in iCloud Drive: Xcode can still hang while reading
+# dehydrated files from SRC_DIR/.deps. Keep a reusable local source snapshot;
+# its own .deps survives between builds, while rsync refreshes project files.
+mkdir -p "$LOCAL_SRC_DIR"
+rsync -a --delete \
+  --exclude '.git/' \
+  --exclude '.deps/' \
+  --exclude 'build_*/' \
+  --exclude 'dist/' \
+  "$SRC_DIR/" "$LOCAL_SRC_DIR/"
+
+# A build tree configured before the local snapshot was introduced points at
+# the iCloud source path and CMake refuses to reuse it with a different -S.
+if [[ -f "$BUILD_DIR/CMakeCache.txt" ]] &&
+  ! grep -qF "CMAKE_HOME_DIRECTORY:INTERNAL=$LOCAL_SRC_DIR" "$BUILD_DIR/CMakeCache.txt"; then
+  cmake -E remove_directory "$BUILD_DIR"
+fi
+
+cmake -S "$LOCAL_SRC_DIR" -B "$BUILD_DIR" -G Xcode \
   -DENABLE_FRONTEND_API=ON -DENABLE_QT=ON \
   -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
   -DPLUGIN_BUILD_NUMBER=1

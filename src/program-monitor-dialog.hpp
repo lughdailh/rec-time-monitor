@@ -5,6 +5,7 @@
 
 class QTimer;
 class QKeyEvent;
+class QCloseEvent;
 class OBSProgramDisplay;
 
 // Auxiliary top-level window (like an OBS Projector) showing the mixed
@@ -17,10 +18,15 @@ public:
 	explicit ProgramMonitorDialog(QWidget *parent = nullptr);
 	void ShowQuickMessage(const QString &message, int durationMs = 5000);
 	void ShowOnScreen(int screenIndex, bool fullscreen = true);
+	void SetCloseLocked(bool locked) { closeLocked_ = locked; }
+
+signals:
+	void ClosedByUser();
 
 protected:
 	void resizeEvent(QResizeEvent *event) override;
 	void keyPressEvent(QKeyEvent *event) override;
+	void closeEvent(QCloseEvent *event) override;
 
 private slots:
 	void UpdateOverlay();
@@ -30,5 +36,6 @@ private:
 	QTimer *timer_ = nullptr;
 	QString quickMessage_;
 	std::chrono::steady_clock::time_point quickMessageUntil_;
-	bool quickMessageWasActive_ = false;
+	QString displayedMessage_;
+	bool closeLocked_ = false;
 };

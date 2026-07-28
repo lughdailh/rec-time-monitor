@@ -6,12 +6,15 @@
 #include "time-tracker.hpp"
 
 #include <QAction>
+#include <QCloseEvent>
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QResizeEvent>
 #include <QWindow>
 #include <QTimer>
 #include <QScreen>
+#include <obs-module.h>
 
 namespace {
 
@@ -28,7 +31,7 @@ QString FormatHMS(int64_t ms)
 
 ProgramMonitorDialog::ProgramMonitorDialog(QWidget *parent) : QWidget(parent, Qt::Window)
 {
-	setWindowTitle("Monitor de Programa");
+	setWindowTitle(obs_module_text("Monitor.Title"));
 	// The embedded obs_display (OBSProgramDisplay) is tied to this window's
 	// native NSView. Closing used to just hide the window (WA_DeleteOnClose
 	// was false, to let "Open Monitor" reuse it), but a hidden window can
@@ -71,18 +74,20 @@ void ProgramMonitorDialog::ShowOnScreen(int screenIndex, bool fullscreen)
 	if (!screen)
 		return;
 
-	if (!isVisible())
-		show();
-
-	move(screen->geometry().topLeft());
-	resize(screen->geometry().size());
 	if (windowHandle())
 		windowHandle()->setScreen(screen);
 
-	if (fullscreen)
+	if (fullscreen) {
+		move(screen->geometry().topLeft());
+		resize(screen->geometry().size());
 		showFullScreen();
-	else
+	} else {
 		showNormal();
+		const QRect available = screen->availableGeometry();
+		const QSize floatingSize(qRound(available.width() * 0.7), qRound(available.height() * 0.7));
+		resize(floatingSize);
+		move(available.center() - QPoint(floatingSize.width() / 2, floatingSize.height() / 2));
+	}
 
 	raise();
 	activateWindow();
@@ -107,24 +112,42 @@ void ProgramMonitorDialog::keyPressEvent(QKeyEvent *event)
 	QWidget::keyPressEvent(event);
 }
 
+void ProgramMonitorDialog::closeEvent(QCloseEvent *event)
+{
+	if (QCoreApplication::closingDown()) {
+		QWidget::closeEvent(event);
+		return;
+	}
+
+	if (closeLocked_) {
+		event->ignore();
+		raise();
+		return;
+	}
+
+	emit ClosedByUser();
+	QWidget::closeEvent(event);
+}
+
 void ProgramMonitorDialog::UpdateOverlay()
 {
 	const TimeTracker::State state = TimeTracker::Instance().GetState();
 	const auto now = std::chrono::steady_clock::now();
 
 	QString colorHex = "#8e8e93";
-	QString badgeText = "STANDBY";
+	QString badgeText = obs_module_text("Status.Standby");
 	int64_t ms = 0;
 	bool active = false;
 
 	if (state.recording) {
 		colorHex = "#ff3b30";
-		badgeText = state.recordingPaused ? "PAUSA" : "REC";
+		badgeText = state.recordingPaused ? obs_module_text("Status.Paused")
+						  : obs_module_text("Status.Recording");
 		ms = state.recordingElapsedMs;
 		active = !state.recordingPaused;
 	} else if (state.streaming) {
 		colorHex = "#ff9500";
-		badgeText = "LIVE";
+		badgeText = obs_module_text("Status.Streaming");
 		ms = state.streamingElapsedMs;
 		active = true;
 	}
@@ -134,13 +157,16 @@ void ProgramMonitorDialog::UpdateOverlay()
 	// switches from one checkpoint's color to the next as time passes.
 	bool alarmActive = false;
 	QString alertColorHex = "#ff3b30";
+	QString alertMessage;
 	int bestSeconds = -1;
 	if (active) {
-		const int64_t elapsedSeconds = ms / 1000;
 		for (const AlertEntry &alert : Settings::Instance().Alerts()) {
-			if (elapsedSeconds >= alert.seconds && alert.seconds > bestSeconds) {
+			const int64_t startMs = static_cast<int64_t>(alert.seconds) * 1000;
+			const int64_t endMs = startMs + static_cast<int64_t>(alert.durationSeconds) * 1000;
+			if (ms >= startMs && ms < endMs && alert.seconds > bestSeconds) {
 				bestSeconds = alert.seconds;
 				alertColorHex = alert.colorHex;
+				alertMessage = alert.message;
 				alarmActive = true;
 			}
 		}
@@ -155,9 +181,11 @@ void ProgramMonitorDialog::UpdateOverlay()
 	// re-rendering and re-uploading it every tick would just be wasted GPU
 	// work for the whole duration it's shown.
 	const bool quickMessageActive = !quickMessage_.isEmpty() && now < quickMessageUntil_;
-	if (quickMessageActive != quickMessageWasActive_) {
-		display_->SetMessageOverlay(quickMessageActive ? RenderMessageImage(quickMessage_, scale) : QImage(),
-					    quickMessageActive);
-		quickMessageWasActive_ = quickMessageActive;
+	const QString messageToShow = quickMessageActive ? quickMessage_ : alertMessage;
+	if (messageToShow != displayedMessage_) {
+		display_->SetMessageOverlay(messageToShow.isEmpty() ? QImage()
+								    : RenderMessageImage(messageToShow, scale),
+					    !messageToShow.isEmpty());
+		displayedMessage_ = messageToShow;
 	}
 }

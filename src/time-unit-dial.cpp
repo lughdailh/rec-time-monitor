@@ -11,7 +11,7 @@ TimeUnitDial::TimeUnitDial(int maxValue, QWidget *parent) : QWidget(parent), max
 
 QSize TimeUnitDial::sizeHint() const
 {
-	return QSize(108, 136);
+	return QSize(70, 84);
 }
 
 void TimeUnitDial::setValue(int v)

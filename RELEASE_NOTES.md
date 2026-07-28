@@ -1,38 +1,42 @@
-# REC Time Monitor 2.0.0
+# REC Time Monitor 2.1.0
 
-Primera versió pública estable de REC Time Monitor per a OBS Studio.
+Nova interfície d'RTM2 per integrar el control del monitor directament a OBS.
 
-## Funcions principals
+## Novetats
 
-- Monitor extern a pantalla completa amb la sortida de Programa d'OBS.
-- Cronòmetre automàtic per als estats REC, PAUSA, LIVE i STANDBY.
-- El cronòmetre i els avisos només apareixen al monitor auxiliar: no queden enregistrats ni emesos.
-- Avisos de temps configurables amb colors.
-- Missatges puntuals per comunicar-se amb l'equip de plató.
-- Selector de pantalla i controls integrats en un dock d'OBS.
-- Compatibilitat provada amb macOS i Windows.
+- Acoblador compacte `rtm2`, sense entrades duplicades al menú Eines.
+- Interfície disponible en català i anglès.
+- Temps de gravació i compte enrere fins a la marca següent.
+- Monitor ON/OFF amb candau contra tancaments accidentals.
+- Selector de monitor, mode de pantalla completa i finestra flotant al 70%.
+- Recuperació automàtica de l'última sortida disponible en iniciar OBS.
+- Marques amb timecode editable, ajust accelerat amb les fletxes, color,
+  durada i text d'avís.
+- Finestra de missatges més compacta amb frases preparades persistents,
+  editables directament amb doble clic.
+- Ajustos de proporcions, tipografia i velocitat d'obertura dels diàlegs.
+
+## Descàrregues
+
+La release inclou ZIPs per a macOS universal i Windows x64. Cada plataforma
+té un fitxer amb la versió `2.1.0` i un àlies `latest-version` amb el mateix
+contingut.
 
 ## Instal·lació
 
 ### macOS
 
-1. Descarrega el paquet per a macOS adjunt a aquesta release.
-2. Instal·la el paquet o copia `rec-time-monitor.plugin` a:
-   `~/Library/Application Support/obs-studio/plugins/`
-3. Reinicia OBS Studio.
+Descomprimeix el ZIP i copia `rec-time-monitor.plugin` a:
+`~/Library/Application Support/obs-studio/plugins/`
 
 ### Windows
 
-1. Descarrega l'instal·lador o el ZIP per a Windows x64.
-2. Si utilitzes l'instal·lador, executa'l com a administrador.
-3. Si utilitzes el ZIP, copia la carpeta `rec-time-monitor` a:
-   `%ProgramData%\obs-studio\plugins\`
-4. Reinicia OBS Studio.
+Descomprimeix el ZIP i copia la carpeta `rec-time-monitor` a:
+`%ProgramData%\obs-studio\plugins\`
 
-Consulta el README per obtenir instruccions detallades, configuració i compilació.
+Reinicia OBS Studio després de la instal·lació.
 
-## Col·laboració i suport
+## Llicència
 
-Les incidències, propostes i pull requests són benvingudes. El projecte es publica sota la llicència GNU GPL v2.
-
-[Buy me a coffee](https://www.buymeacoffee.com/totalamandanga)
+REC Time Monitor es distribueix sota GNU GPL v2 o qualsevol versió posterior
+(`GPL-2.0-or-later`).

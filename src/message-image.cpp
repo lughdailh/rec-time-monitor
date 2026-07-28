@@ -6,6 +6,7 @@
 #include <QPainter>
 
 #include <algorithm>
+#include <obs-module.h>
 
 namespace {
 
@@ -26,7 +27,8 @@ QFont MessageFont(double scale)
 QImage RenderMessageImage(const QString &message, double scale)
 {
 	scale = std::clamp(scale, 1.0, 3.0);
-	const QString text = message.trimmed().isEmpty() ? QStringLiteral("MISSATGE") : message.trimmed();
+	const QString text = message.trimmed().isEmpty() ? QString::fromUtf8(obs_module_text("Message.Fallback"))
+							 : message.trimmed();
 
 	const int padding = static_cast<int>(kBasePadding * scale);
 	const QFont font = MessageFont(scale);

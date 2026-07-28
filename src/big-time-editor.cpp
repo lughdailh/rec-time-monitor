@@ -12,7 +12,7 @@ QLabel *ColonLabel(QWidget *parent)
 {
 	auto *label = new QLabel(QStringLiteral(":"), parent);
 	QFont f = label->font();
-	f.setPixelSize(34);
+	f.setPixelSize(24);
 	f.setBold(true);
 	label->setFont(f);
 	label->setStyleSheet("color: rgba(255, 255, 255, 180);");
@@ -32,11 +32,11 @@ BigTimeEditor::BigTimeEditor(QWidget *parent) : QWidget(parent)
 		dial->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-	setMinimumHeight(146);
+	setMinimumHeight(92);
 
 	auto *layout = new QHBoxLayout(this);
 	layout->setContentsMargins(0, 0, 0, 0);
-	layout->setSpacing(10);
+	layout->setSpacing(4);
 	layout->addWidget(hours_, 1);
 	layout->addWidget(ColonLabel(this), 0);
 	layout->addWidget(minutes_, 1);
