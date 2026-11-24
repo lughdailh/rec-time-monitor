@@ -20,10 +20,15 @@
 ; The resulting installer appears in installer\windows\Output\.
 
 #define MyAppName "REC Time Monitor"
-#define MyAppVersion "2.1.0"
+#ifndef MyAppVersion
+#define MyAppVersion "2.1.1"
+#endif
 #define MyAppPublisher "CCS"
 #define PluginDirName "rec-time-monitor"
-#define BuiltPluginDir "..\..\release\Release\" + PluginDirName
+#ifndef BuildConfig
+#define BuildConfig "Release"
+#endif
+#define BuiltPluginDir "..\..\release\" + BuildConfig + "\" + PluginDirName
 
 [Setup]
 AppId={{5B1F7C2A-6E3D-4B8A-9C1E-REC-TIME-MONITOR}}
