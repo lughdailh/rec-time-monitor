@@ -193,6 +193,8 @@ void PrepareQuickMessageDialog()
 
 void OpenQuickMessageDialog(void *)
 {
+	if (g_messageDialog && !g_messageDialog->isVisible())
+		delete g_messageDialog.data();
 	PrepareQuickMessageDialog();
 	g_messageDialog->show();
 	g_messageDialog->raise();
@@ -326,7 +328,7 @@ QWidget *CreateMessagesPanel(QSplitter *splitter)
 			QObject::connect(send, &QPushButton::clicked, table, [table, row, manual, index, duration]() {
 				const auto messagesNow = Settings::Instance().MessagePresets();
 				const auto alertsNow = Settings::Instance().Alerts();
-				if (manual && index < messagesNow.size())
+				if (manual && index < messagesNow.size() && table->item(row, 2)->text() == messagesNow[index])
 					SendDockMessage(messagesNow[index], duration->value());
 				else if (!manual && index < alertsNow.size() &&
 					 table->item(row, 1)->text() == FormatHMS(alertsNow[index].seconds) &&
