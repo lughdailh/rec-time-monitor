@@ -3,6 +3,10 @@
 #include <plugin-support.h>
 
 #include <QFrame>
+#include <QSignalBlocker>
+#include <QRegularExpression>
+#include <QSpinBox>
+#include <memory>
 #include <QSplitter>
 #include <QTableWidget>
 #include <QHeaderView>
@@ -73,7 +77,7 @@ protected:
 private:
 	void UpdateTypography()
 	{
-		const int usableWidth = std::max(245, width() - 40);
+		const int usableWidth = std::max(245, (elapsed_ && elapsed_->parentWidget() ? elapsed_->parentWidget()->width() : width()) - 40);
 
 		auto applyFont = [](QWidget *widget, int pixelSize, QFont::Weight weight) {
 			if (!widget)
@@ -224,12 +228,194 @@ void UpdateMonitorControls()
 		g_dialog->SetCloseLocked(locked);
 }
 
+
+class DockMessageTable final : public QTableWidget {
+public:
+	using QTableWidget::QTableWidget;
+	bool IsEditing() const { return state() == QAbstractItemView::EditingState; }
+};
+
+void SendDockMessage(const QString &text, int seconds)
+{
+	if (text.trimmed().isEmpty())
+		return;
+	if (!g_dialog)
+		OpenPluginMonitor(nullptr);
+	if (g_dialog)
+		g_dialog->ShowQuickMessage(text.trimmed(), std::clamp(seconds, 1, 600) * 1000);
+}
+
+QWidget *CreateMessagesPanel(QSplitter *splitter)
+{
+	auto *panel = new QWidget(splitter);
+	panel->setMinimumWidth(270);
+	auto *layout = new QVBoxLayout(panel);
+	layout->setContentsMargins(4, 8, 8, 8);
+	auto *table = new DockMessageTable(panel);
+	table->setColumnCount(4);
+	table->setHorizontalHeaderLabels({QStringLiteral("#"), obs_module_text("Dock.TableTime"),
+					  obs_module_text("Dock.TableMessage"), obs_module_text("Message.Send")});
+	table->verticalHeader()->hide();
+	table->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+	table->horizontalHeader()->setMinimumSectionSize(28);
+	table->setColumnWidth(0, 34);
+	table->setColumnWidth(1, 92);
+	table->setColumnWidth(2, 190);
+	table->setColumnWidth(3, 75);
+	table->setSelectionBehavior(QAbstractItemView::SelectRows);
+	table->setSelectionMode(QAbstractItemView::SingleSelection);
+	layout->addWidget(table, 1);
+	auto *buttons = new QHBoxLayout;
+	auto *add = new QPushButton(obs_module_text("Settings.AddMark"), panel);
+	auto *remove = new QPushButton(obs_module_text("Settings.DeleteMark"), panel);
+	buttons->addWidget(add);
+	buttons->addWidget(remove);
+	layout->addLayout(buttons);
+	auto *duration = new QSpinBox(panel);
+	duration->setRange(1, 600);
+	duration->setValue(5);
+	duration->setSuffix(QStringLiteral(" s"));
+	auto *durationRow = new QHBoxLayout;
+	durationRow->addWidget(new QLabel(obs_module_text("Message.Duration"), panel));
+	durationRow->addWidget(duration);
+	layout->addLayout(durationRow);
+
+	auto presets = Settings::Instance().MessagePresets();
+	if (presets.size() != 6) {
+		presets.clear();
+		for (const char *key : {"Message.Preset1", "Message.Preset2", "Message.Preset3",
+					"Message.Preset4", "Message.Preset5", "Message.Preset6"})
+			presets.append(obs_module_text(key));
+		Settings::Instance().SetMessagePresets(presets);
+	}
+
+	auto signature = []() {
+		QStringList result = Settings::Instance().MessagePresets();
+		for (const auto &alert : Settings::Instance().Alerts()) {
+			result << QString::number(alert.seconds) << alert.message
+			       << QString::number(alert.durationSeconds) << alert.colorHex;
+		}
+		return result;
+	};
+	auto rebuild = [table, duration]() {
+		const QSignalBlocker blocker(table);
+		const int previousRow = table->currentRow();
+		const auto messages = Settings::Instance().MessagePresets();
+		const auto alerts = Settings::Instance().Alerts();
+		const int presetCount = static_cast<int>(messages.size());
+		const int count = presetCount + static_cast<int>(alerts.size());
+		table->setRowCount(0);
+		table->setRowCount(count);
+		for (int row = 0; row < count; ++row) {
+			const bool manual = row < presetCount;
+			const int index = manual ? row : row - presetCount;
+			auto *number = new QTableWidgetItem(QString::number(row + 1));
+			number->setFlags(number->flags() & ~Qt::ItemIsEditable);
+			table->setItem(row, 0, number);
+			auto *time = new QTableWidgetItem(manual ? QStringLiteral("—") : FormatHMS(alerts[index].seconds));
+			if (manual)
+				time->setFlags(time->flags() & ~Qt::ItemIsEditable);
+			table->setItem(row, 1, time);
+			auto *message = new QTableWidgetItem(manual ? messages[index] : alerts[index].message);
+			if (!manual)
+				message->setToolTip(QStringLiteral("%1 s · %2").arg(alerts[index].durationSeconds).arg(alerts[index].colorHex));
+			table->setItem(row, 2, message);
+			auto *send = new QPushButton(obs_module_text("Message.Send"), table);
+			send->setFocusPolicy(Qt::NoFocus);
+			table->setCellWidget(row, 3, send);
+			QObject::connect(send, &QPushButton::clicked, table, [table, row, manual, index, duration]() {
+				const auto messagesNow = Settings::Instance().MessagePresets();
+				const auto alertsNow = Settings::Instance().Alerts();
+				if (manual && index < messagesNow.size())
+					SendDockMessage(messagesNow[index], duration->value());
+				else if (!manual && index < alertsNow.size() &&
+					 table->item(row, 1)->text() == FormatHMS(alertsNow[index].seconds) &&
+					 table->item(row, 2)->text() == alertsNow[index].message)
+					SendDockMessage(alertsNow[index].message, alertsNow[index].durationSeconds);
+			});
+		}
+		if (previousRow >= 0 && previousRow < count)
+			table->selectRow(previousRow);
+	};
+	auto last = std::make_shared<QStringList>();
+	auto refresh = [table, signature, rebuild, last]() {
+		if (table->IsEditing())
+			return;
+		const auto current = signature();
+		if (*last != current) {
+			*last = current;
+			rebuild();
+		}
+	};
+	QObject::connect(table, &QTableWidget::itemChanged, panel,
+			 [table, signature, last](QTableWidgetItem *item) {
+		if (*last != signature())
+			return; // Another editor changed the settings; refresh instead of editing a stale row.
+		auto messages = Settings::Instance().MessagePresets();
+		const int row = item->row();
+		const int col = item->column();
+		if (row < messages.size()) {
+			if (col == 2 && !item->text().trimmed().isEmpty()) {
+				messages[row] = item->text().trimmed();
+				Settings::Instance().SetMessagePresets(messages);
+			}
+		} else {
+			const int index = row - static_cast<int>(messages.size());
+			const auto alerts = Settings::Instance().Alerts();
+			if (index >= 0 && index < alerts.size()) {
+				if (col == 2)
+					Settings::Instance().SetAlertMessage(index, item->text());
+				else if (col == 1) {
+					const QRegularExpression valid(QStringLiteral("^[0-9]{1,2}:[0-5][0-9]:[0-5][0-9]$"));
+					if (valid.match(item->text()).hasMatch()) {
+						const auto parts = item->text().split(':');
+						Settings::Instance().SetAlertSeconds(index, parts[0].toInt() * 3600 +
+											     parts[1].toInt() * 60 + parts[2].toInt());
+					}
+				}
+			}
+		}
+		// Normalize edits (including invalid timecodes) after the delegate closes.
+		last->clear();
+	});
+	QObject::connect(add, &QPushButton::clicked, panel, [refresh]() {
+		Settings::Instance().AddAlert(60, "#ff3b30");
+		refresh();
+	});
+	QObject::connect(remove, &QPushButton::clicked, panel, [table, refresh, signature, last]() {
+		if (*last != signature())
+			return;
+		const int index = table->currentRow() - static_cast<int>(Settings::Instance().MessagePresets().size());
+		if (index >= 0)
+			Settings::Instance().RemoveAlert(index);
+		refresh();
+	});
+	auto *timer = new QTimer(panel);
+	timer->setInterval(250);
+	QObject::connect(timer, &QTimer::timeout, panel, refresh);
+	refresh();
+	timer->start();
+	QSettings ui(QStringLiteral("REC Time Monitor"), QStringLiteral("Dock"));
+	table->horizontalHeader()->restoreState(ui.value("columns").toByteArray());
+	QObject::connect(table->horizontalHeader(), &QHeaderView::sectionResized, panel, [table]() {
+		QSettings(QStringLiteral("REC Time Monitor"), QStringLiteral("Dock"))
+			.setValue("columns", table->horizontalHeader()->saveState());
+	});
+	return panel;
+}
+
 QWidget *CreateMonitorDock(QWidget *parent)
 {
 	auto *dock = new MonitorDock(parent);
 	dock->setObjectName("rec-time-monitor-dock");
 
-	auto *layout = new QVBoxLayout(dock);
+	auto *root = new QHBoxLayout(dock);
+	root->setContentsMargins(0, 0, 0, 0);
+	auto *splitter = new QSplitter(Qt::Horizontal, dock);
+	root->addWidget(splitter);
+	auto *controls = new QWidget(splitter);
+	controls->setMinimumWidth(260);
+	auto *layout = new QVBoxLayout(controls);
 	layout->setContentsMargins(10, 10, 10, 10);
 	layout->setSpacing(7);
 
@@ -323,7 +509,20 @@ QWidget *CreateMonitorDock(QWidget *parent)
 	QObject::connect(preferencesButton, &QPushButton::clicked, dock, []() { OpenPreferencesDialog(nullptr); });
 	layout->addWidget(preferencesButton);
 
-	dock->setMinimumWidth(280);
+	splitter->addWidget(controls);
+	splitter->addWidget(CreateMessagesPanel(splitter));
+	splitter->setChildrenCollapsible(false);
+	splitter->setSizes({280, 320});
+	QSettings ui(QStringLiteral("REC Time Monitor"), QStringLiteral("Dock"));
+	splitter->restoreState(ui.value("splitter").toByteArray());
+	QObject::connect(splitter, &QSplitter::splitterMoved, dock, [splitter]() {
+		QSettings(QStringLiteral("REC Time Monitor"), QStringLiteral("Dock"))
+			.setValue("splitter", splitter->saveState());
+	});
+	QObject::connect(splitter, &QSplitter::splitterMoved, dock, [dock, elapsedLabel, nextTitle, nextLabel, messageButton]() {
+		dock->SetTypographyTargets(elapsedLabel, nextTitle, nextLabel, messageButton);
+	});
+	dock->setMinimumWidth(540);
 	dock->setStyleSheet("#rec-time-monitor-dock { background: #111111; }"
 			    "#rtmElapsed { color: #f5f5f5; }"
 			    "#rtmNextTitle { color: #f5f5f5; }"
