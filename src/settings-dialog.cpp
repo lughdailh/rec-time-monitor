@@ -365,8 +365,10 @@ void PrepareSettingsDialog(QWidget *parent, SettingsDialog::MonitorTargetCallbac
 
 void ShowSettingsDialog(QWidget *parent, SettingsDialog::MonitorTargetCallback monitorTargetCallback)
 {
-	PrepareSettingsDialog(parent, std::move(monitorTargetCallback));
 	QPointer<SettingsDialog> &instance = SharedSettingsDialog();
+	if (instance && !instance->isVisible())
+		delete instance.data();
+	PrepareSettingsDialog(parent, std::move(monitorTargetCallback));
 
 	instance->show();
 	instance->raise();
