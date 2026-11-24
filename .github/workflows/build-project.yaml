@@ -209,20 +209,6 @@ jobs:
           target: x64
           config: ${{ needs.check-event.outputs.config }}
 
-      # build-plugin already ran `cmake --install ... --prefix release/<config>`
-      # (see Build-Windows.ps1), so release/<config>/rec-time-monitor/{bin/64bit,data}
-      # exists at this point — exactly what installer/windows/rec-time-monitor.iss expects.
-      - name: Build Installer (Inno Setup) 📦
-        shell: pwsh
-        run: |
-          iscc installer\windows\rec-time-monitor.iss
-
-      - name: Upload Installer 📡
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.setup.outputs.pluginName }}-${{ steps.setup.outputs.pluginVersion }}-windows-x64-installer-${{ needs.check-event.outputs.commitHash }}
-          path: ${{ github.workspace }}/installer/windows/Output/*.exe
-
       - name: Package Plugin 📀
         uses: ./.github/actions/package-plugin
         with:
@@ -235,3 +221,18 @@ jobs:
         with:
           name: ${{ steps.setup.outputs.pluginName }}-${{ steps.setup.outputs.pluginVersion }}-windows-x64-${{ needs.check-event.outputs.commitHash }}
           path: ${{ github.workspace }}/release/${{ steps.setup.outputs.pluginName }}-${{ steps.setup.outputs.pluginVersion }}-windows-x64*.*
+
+      # build-plugin already ran `cmake --install ... --prefix release/<config>`
+      # (see Build-Windows.ps1), so release/<config>/rec-time-monitor/{bin/64bit,data}
+      # exists at this point — exactly what installer/windows/rec-time-monitor.iss expects.
+      - name: Build Installer (Inno Setup) 📦
+        shell: pwsh
+        run: |
+          iscc "/DBuildConfig=${{ needs.check-event.outputs.config }}" "/DMyAppVersion=${{ steps.setup.outputs.pluginVersion }}" installer\windows\rec-time-monitor.iss
+          if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
+
+      - name: Upload Installer 📡
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.setup.outputs.pluginName }}-${{ steps.setup.outputs.pluginVersion }}-windows-x64-installer-${{ needs.check-event.outputs.commitHash }}
+          path: ${{ github.workspace }}/installer/windows/Output/*.exe
