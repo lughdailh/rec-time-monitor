@@ -2,6 +2,12 @@
 
 include_guard(GLOBAL)
 
+if(OBS_SDK_PATH)
+  list(PREPEND CMAKE_PREFIX_PATH "${OBS_SDK_PATH}")
+  list(PREPEND CMAKE_FRAMEWORK_PATH "${OBS_SDK_PATH}/Frameworks")
+  return()
+endif()
+
 include(buildspec_common)
 
 # _check_dependencies_macos: Set up macOS slice for _check_dependencies
