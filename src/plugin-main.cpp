@@ -3,6 +3,10 @@
 #include <plugin-support.h>
 
 #include <QFrame>
+#include <QSplitter>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QSettings>
 #include <QFont>
 #include <QGuiApplication>
 #include <QHBoxLayout>
